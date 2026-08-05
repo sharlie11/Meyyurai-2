@@ -42,6 +42,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useI18n, LANGUAGES, type Lang } from "@/lib/i18n";
+import { setActiveUser } from "@/lib/auth-helper";
 import {
   requestCamera,
   requestLocation,
@@ -108,6 +109,7 @@ function ProfileScreen() {
 
   const onSignOut = async () => {
     await supabase.auth.signOut();
+    setActiveUser(null);
     navigate({ to: "/auth" });
   };
 
@@ -179,7 +181,7 @@ function ProfileScreen() {
 
   return (
     <div className="animate-fade-up">
-      <ScreenHeader eyebrow="You" title={t("nav.profile")} />
+      <ScreenHeader eyebrow={t("profile.section.you")} title={t("nav.profile")} />
 
       {/* Header card */}
       <section className="px-5">
@@ -195,7 +197,7 @@ function ProfileScreen() {
               {profile?.full_name || "Meyyurai user"}
             </p>
             <p className="text-xs text-muted-foreground">
-              {profile?.phone_number || "Tap to complete your profile"}
+              {profile?.phone_number || t("profile.subtitle.tap")}
             </p>
           </div>
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -203,8 +205,8 @@ function ProfileScreen() {
       </section>
 
       {/* Language */}
-      <Group title="Language">
-        <Row icon={Languages} label={t("onboarding.language")}>
+      <Group title={t("profile.section.language")}>
+        <Row icon={Languages} label={t("profile.preferredLang")}>
           <Select value={lang} onValueChange={(v) => onLangChange(v as Lang)}>
             <SelectTrigger className="h-9 w-36 rounded-lg">
               <SelectValue />
@@ -224,19 +226,19 @@ function ProfileScreen() {
       <section className="mt-6 px-5">
         <div className="mb-2 flex items-center justify-between px-1">
           <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            Emergency contacts
+            {t("profile.section.contacts")}
           </h2>
           <button
             onClick={() => setAddOpen(true)}
             className="flex items-center gap-1 text-xs font-medium text-primary"
           >
-            <Plus className="h-3.5 w-3.5" /> Add
+            <Plus className="h-3.5 w-3.5" /> {t("profile.add")}
           </button>
         </div>
         <ul className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
           {contacts.length === 0 && (
             <li className="px-4 py-4 text-xs text-muted-foreground">
-              No contacts yet. Add someone we can alert in an emergency.
+              {t("profile.noContacts")}
             </li>
           )}
           {contacts.map((c, idx) => (
@@ -267,45 +269,45 @@ function ProfileScreen() {
       </section>
 
       {/* Permissions */}
-      <Group title="Permissions">
-        <Row icon={MapPin} label="Location" desc="For emergency and nearby help">
+      <Group title={t("profile.section.permissions")}>
+        <Row icon={MapPin} label={t("profile.location")} desc={t("profile.locationDesc")}>
           <Button
             size="sm"
             variant="outline"
             className="h-8 rounded-full"
             onClick={() => requestLocation()}
           >
-            Allow
+            {t("profile.allow")}
           </Button>
         </Row>
-        <Row icon={Mic} label="Microphone" desc="For voice conversations">
+        <Row icon={Mic} label={t("profile.microphone")} desc={t("profile.microphoneDesc")}>
           <Button
             size="sm"
             variant="outline"
             className="h-8 rounded-full"
             onClick={() => requestMicrophone()}
           >
-            Allow
+            {t("profile.allow")}
           </Button>
         </Row>
-        <Row icon={Camera} label="Camera" desc="For evidence and documents">
+        <Row icon={Camera} label={t("profile.camera")} desc={t("profile.cameraDesc")}>
           <Button
             size="sm"
             variant="outline"
             className="h-8 rounded-full"
             onClick={() => requestCamera()}
           >
-            Allow
+            {t("profile.allow")}
           </Button>
         </Row>
-        <Row icon={Bell} label="Notifications" desc="Alerts and reminders" last>
+        <Row icon={Bell} label={t("profile.notifications")} desc={t("profile.notificationsDesc")} last>
           <Button
             size="sm"
             variant="outline"
             className="h-8 rounded-full"
             onClick={() => requestNotifications()}
           >
-            Allow
+            {t("profile.allow")}
           </Button>
         </Row>
       </Group>
@@ -318,27 +320,27 @@ function ProfileScreen() {
       </Group>
 
       {/* Account */}
-      <Group title="Account">
+      <Group title={t("profile.section.account")}>
         <Row
           icon={UserRound}
           label="Edit profile"
           onClick={() => navigate({ to: "/onboarding" })}
         />
-        <Row icon={KeyRound} label="Change password" onClick={() => setPwOpen(true)} />
+        <Row icon={KeyRound} label={t("profile.changePw")} onClick={() => setPwOpen(true)} />
         <Row icon={FolderOpen} label="Privacy & security" desc="End-to-end protected" />
         <Row icon={ShieldCheck} label="Saved data" desc="Stored securely in your account" last />
       </Group>
 
       <div className="px-5 mt-6 space-y-2">
         <Button variant="outline" className="w-full h-11 rounded-full" onClick={onSignOut}>
-          <LogOut className="h-4 w-4 mr-2" /> {t("common.logout")}
+          <LogOut className="h-4 w-4 mr-2" /> {t("profile.logout")}
         </Button>
         <Button
           variant="ghost"
           className="w-full h-11 rounded-full text-emergency hover:text-emergency hover:bg-emergency/10"
           onClick={() => setDelOpen(true)}
         >
-          <Trash2 className="h-4 w-4 mr-2" /> Delete account
+          <Trash2 className="h-4 w-4 mr-2" /> {t("profile.deleteAcc")}
         </Button>
       </div>
 

@@ -1,16 +1,18 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Siren, Sparkles, Scale, LibraryBig, User } from "lucide-react";
-
-const items = [
-  { to: "/", label: "Emergency", icon: Siren },
-  { to: "/ai", label: "Meyyurai AI", icon: Sparkles },
-  { to: "/rights", label: "Rights", icon: Scale },
-  { to: "/resources", label: "Resources", icon: LibraryBig },
-  { to: "/profile", label: "Profile", icon: User },
-] as const;
+import { useI18n } from "@/lib/i18n";
 
 export function BottomNav() {
+  const { t } = useI18n();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  const items = [
+    { to: "/", label: t("nav.emergency"), icon: Siren },
+    { to: "/ai", label: t("nav.ai"), icon: Sparkles },
+    { to: "/rights", label: t("nav.rights"), icon: Scale },
+    { to: "/resources", label: t("nav.resources"), icon: LibraryBig },
+    { to: "/profile", label: t("nav.profile"), icon: User },
+  ];
 
   return (
     <nav

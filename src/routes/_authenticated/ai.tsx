@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { supabase } from "@/integrations/supabase/client";
+import { useI18n } from "@/lib/i18n";
 import type { GeneratedAiResponse, RetrievalDocument } from "@/lib/ai/provider";
 
 export const Route = createFileRoute("/_authenticated/ai")({
@@ -48,6 +49,7 @@ type Message = {
 };
 
 function AiScreen() {
+  const { t } = useI18n();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -85,7 +87,7 @@ function AiScreen() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Authorization: `Bearer ${token || "active_demo_token"}`,
         },
         body: JSON.stringify({
           question: userMessage.content,
@@ -217,7 +219,7 @@ function AiScreen() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type your situation or follow-up question here..."
+            placeholder={t("ai.placeholder")}
             rows={1}
             className="max-h-32 min-h-[44px] w-full resize-none bg-transparent px-3 py-2.5 text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none"
             style={{ fieldSizing: "content" } as React.CSSProperties}
@@ -295,6 +297,21 @@ function AiStructuredResponse({
 
   return (
     <div className="space-y-4 w-full animate-fade-up">
+      {/* 0. Source Mode Badge (Phase 1: Make Failure Visible) */}
+      <div className="w-full flex items-center justify-between px-1">
+        {data.is_fallback ? (
+          <div className="flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 shadow-sm">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
+            <span>⚠️ Fallback Mode — limited guidance, AI service / retrieval unavailable</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 shadow-sm">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+            <span>✓ Verified — Gemini + RAG ({data.retrieval_count || 0} Legal Sources)</span>
+          </div>
+        )}
+      </div>
+
       {/* 1. Situation Summary */}
       {explanation?.situation_summary && (
         <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">

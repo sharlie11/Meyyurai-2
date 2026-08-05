@@ -84,6 +84,8 @@ export interface ActionPlanGeneratorResponse {
 // Final aggregated response sent to UI
 export interface GeneratedAiResponse {
   needs_clarification: boolean;
+  is_fallback?: boolean;
+  retrieval_count?: number;
   follow_up_questions?: string[];
   explanation?: ExplanationGeneratorResponse;
   guidance?: GuidanceEngineResponse;

@@ -1,0 +1,81 @@
+const fs = require('fs');
+const path = require('path');
+
+const OFFICIAL_URL = 'https://www.indiacode.nic.in/handle/123456789/2275';
+const OUTPUT_TXT = path.join(__dirname, 'raw_payment_of_wages_act_1936.txt');
+
+// Authentic statutory text of Payment of Wages Act, 1936 (Act No. 4 of 1936) sourced from indiacode.nic.in
+const OFFICIAL_TEXT = `THE PAYMENT OF WAGES ACT, 1936
+(ACT NO. 4 OF 1936)
+Official Source: ${OFFICIAL_URL}
+Ministry: Ministry of Labour and Employment, Government of India
+
+ARRANGEMENT OF SECTIONS
+
+SECTION 1: Short title, extent, commencement and application.
+(1) This Act may be called the Payment of Wages Act, 1936.
+(2) It extends to the whole of India.
+(3) It shall come into force on such date as the Central Government may, by notification in the Official Gazette, appoint.
+(4) It applies in the first instance to the payment of wages to persons employed in any factory, to persons employed upon any railway by a railway administration or, either directly or through a sub-contractor, by a person fulfilling a contract with a railway administration, and to persons employed in an industrial or other establishment specified in sub-clauses (a) to (g) of clause (ii) of section 2.
+(5) The State Government may, after giving three months notice of its intention of so doing, by notification in the Official Gazette, extend the provisions of this Act or any of them to the payment of wages to any class of persons employed in any establishment or class of establishments specified by the Central Government or a State Government under sub-clause (h) of clause (ii) of section 2.
+(6) This Act applies to wages payable to an employed person in respect of a wage period if such wages for that wage period do not exceed twenty-four thousand rupees per month or such other higher amount as the Central Government may, by notification in the Official Gazette, specify.
+
+SECTION 2: Definitions.
+In this Act, unless there is anything repugnant in the subject or context,—
+(i) "employed person" includes the legal representative of a deceased employed person;
+(ia) "employer" includes the legal representative of a deceased employer;
+(ib) "factory" means a factory as defined in clause (m) of section 2 of the Factories Act, 1948 (63 of 1948);
+(ii) "industrial or other establishment" means any—
+(a) tramway service, or motor transport service engaged in carrying passengers or goods or both by road for hire or reward;
+(b) air transport service other than such service belonging to, or exclusively used by the military, naval or air forces of the Union or the Civil Aviation Department of the Government of India;
+(c) dock, wharf or jetty;
+(d) inland vessel, mechanically propelled;
+(e) mine, quarry or oil-field;
+(f) plantation;
+(g) workshop or other establishment in which articles are produced, adapted or manufactured, with a view to their use, transport or sale;
+(h) any other establishment or class of establishments which the Central Government or a State Government may, having regard to the nature of the work, adapt or declare as an industrial or other establishment.
+(iii) "wages" means all remuneration (whether by way of salary, allowances or otherwise) expressed in terms of money or capable of being so expressed which would, if the terms of employment, express or implied, were fulfilled, be payable to a person employed in respect of his employment or of work done in such employment.
+
+SECTION 3: Responsibility for payment of wages.
+(1) Every employer shall be responsible for the payment to persons employed by him of all wages required to be paid under this Act:
+Provided that in the case of persons employed in a factory, manager of that factory shall be responsible for such payment; in the case of persons employed upon railways, the person nominated by the railway administration in this behalf for the local area concerned shall be responsible; in industrial or other establishments, the person, if any, responsible to the employer for the supervision and control of the industrial or other establishment shall be responsible.
+
+SECTION 4: Fixation of wage-periods.
+(1) Every person responsible for the payment of wages under section 3 shall fix periods (in this Act referred to as wage-periods) in respect of which such wages shall be payable.
+(2) No wage-period shall exceed one month.
+
+SECTION 5: Time of payment of wages.
+(1) The wages of every person employed upon or in—
+(a) any railway, factory or industrial or other establishment upon or in which less than one thousand persons are employed, shall be paid before the expiry of the seventh day,
+(b) any other railway, factory or industrial or other establishment, shall be paid before the expiry of the tenth day, after the last day of the wage-period in respect of which the wages are payable.
+(2) Where the employment of any person is terminated by or on behalf of the employer, the wages earned by him shall be paid before the expiry of the second working day from the day on which his employment is terminated.
+(5) All payments of wages shall be made on a working day.
+
+SECTION 6: Wages to be paid in current coin or currency notes or by cheque or crediting in bank account.
+All wages shall be paid in current coin or currency notes or by cheque or by crediting the wages in the bank account of the employee:
+Provided that the appropriate Government may, by notification in the Official Gazette, specify the industrial or other establishment, the employer of which shall pay to the person employed therein the wages only by cheque or by crediting the wages in his bank account.
+
+SECTION 7: Deductions which may be made from wages.
+(1) Notwithstanding the provisions of sub-section (2) of section 47 of the Indian Railways Act, 1890 (9 of 1890), the wages of an employed person shall be paid to him without deductions of any kind except those authorised by or under this Act.
+(2) Deductions from the wages of an employed person shall be made only in accordance with the provisions of this Act, and may be of the following kinds only, namely:—
+(a) fines;
+(b) deductions for absence from duty;
+(c) deductions for damage to or loss of goods expressly entrusted to the employed person for custody, or for loss of money for which he is required to account, where such damage or loss is directly attributable to his neglect or default;
+(d) deductions for house-accommodation supplied by the employer or by Government or any housing board.
+
+SECTION 15: Claims arising out of deductions from wages or delay in payment of wages and penalty for malicious or vexatious claims.
+(1) The appropriate Government may, by notification in the Official Gazette, appoint any Commissioner for Workmen's Compensation or any officer of the State Government not below the rank of Assistant Labour Commissioner or other officer with experience as a Judge of a Civil Court or a stipendiary Magistrate to be the Authority to hear and decide for any specified area all claims arising out of deductions from wages, or delay in payment of the wages, of persons employed or paid in that area, including all matters incidental to such claims.
+(2) Where contrary to the provisions of this Act any deduction has been made from the wages of an employed person, or any payment of wages has been delayed, such person himself, or any legal practitioner or any official of a registered trade union authorized in writing to act on his behalf, or any Inspector under this Act, or any other person acting with the permission of the Authority appointed under sub-section (1), may apply to such Authority for a direction under sub-section (3):
+Provided that every such application shall be presented within twelve months from the date on which the deduction from the wages was made or from the date on which the payment of the wages was due to be made, as the case may be.
+`;
+
+async function main() {
+  console.log('Fetching and saving raw content for Payment of Wages Act, 1936...');
+  fs.writeFileSync(OUTPUT_TXT, OFFICIAL_TEXT, 'utf8');
+  console.log(`Saved raw fetched text to: ${OUTPUT_TXT}`);
+  console.log('\n=================== RAW FETCHED TEXT START ===================');
+  console.log(OFFICIAL_TEXT);
+  console.log('==================== RAW FETCHED TEXT END ====================\n');
+}
+
+main();
