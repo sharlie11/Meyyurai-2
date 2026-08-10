@@ -90,11 +90,18 @@ export interface GeneratedAiResponse {
   explanation?: ExplanationGeneratorResponse;
   guidance?: GuidanceEngineResponse;
   action_plan?: ActionPlanGeneratorResponse;
+  internal_case_summary?: InternalCaseSummary;
 }
 
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+}
+
+export interface CombinedRAGResponse {
+  explanation: ExplanationGeneratorResponse;
+  guidance: GuidanceEngineResponse;
+  action_plan: ActionPlanGeneratorResponse;
 }
 
 export interface AIProvider {
@@ -126,25 +133,43 @@ export interface AIProvider {
   generateActionPlan(guidance: GuidanceEngineResponse): Promise<ActionPlanGeneratorResponse>;
 
   /**
+   * Single-pass combined generator for explanation, guidance, and action plan.
+   * Significantly reduces latency by combining stages into 1 LLM call.
+   */
+  generateCombinedRAGResponse?(
+    userQuery: string,
+    caseSummary: InternalCaseSummary | undefined,
+    retrievedDocuments: RetrievalDocument[],
+    retrievedServices: GovernmentService[],
+  ): Promise<CombinedRAGResponse>;
+
+  /**
    * Generates a vector embedding for the given text.
    */
   generateEmbedding(text: string): Promise<number[]>;
 }
 
+
 export interface AIFactoryOptions {
-  provider?: "gemini" | "openai" | "anthropic" | "local";
+  provider?: "gemini" | "ollama" | "local" | "openai" | "anthropic";
 }
 
 /**
  * Factory to get the configured AI provider.
  */
 export async function getAIProvider(options?: AIFactoryOptions): Promise<AIProvider> {
-  const providerType = options?.provider || process.env.AI_PROVIDER || "gemini";
+  const providerType = (options?.provider || process.env.AI_PROVIDER || "gemini").toLowerCase();
 
   if (providerType === "gemini") {
     const { GeminiProvider } = await import("./providers/gemini");
     return new GeminiProvider();
   }
 
+  if (providerType === "ollama" || providerType === "local") {
+    const { OllamaProvider } = await import("./providers/ollama");
+    return new OllamaProvider();
+  }
+
   throw new Error(`AI Provider ${providerType} is not supported or not implemented.`);
 }
+

@@ -58,12 +58,17 @@ function AuthPage() {
             email: data.user.email || email,
             user_metadata: { full_name: name },
           });
+          // Log security audit activity to PostgreSQL
+          await supabase.from("activity_logs").insert({
+            user_id: data.user.id,
+            action: "USER_SIGNUP",
+            device_info: { user_agent: navigator.userAgent, platform: navigator.platform },
+          }).catch(() => {});
           toast.success("Account created successfully!");
           goNext();
           return;
         }
 
-        // Handle remote trigger or confirmation issues seamlessly
         const activeUser = {
           id: "usr_" + Date.now().toString(36),
           email: email,
@@ -80,11 +85,16 @@ function AuthPage() {
             email: data.user.email || email,
             user_metadata: { full_name: data.user.user_metadata?.full_name },
           });
+          // Log security audit activity to PostgreSQL
+          await supabase.from("activity_logs").insert({
+            user_id: data.user.id,
+            action: "USER_LOGIN",
+            device_info: { user_agent: navigator.userAgent, platform: navigator.platform },
+          }).catch(() => {});
           toast.success("Signed in successfully!");
           goNext();
           return;
         }
-        // Fallback sign in
         const activeUser = {
           id: "usr_" + Date.now().toString(36),
           email: email,
@@ -117,9 +127,21 @@ function AuthPage() {
           redirectTo: `${window.location.origin}/auth`,
         },
       });
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes("provider is not enabled") || error.message.includes("validation_failed")) {
+          toast.error(`${p === "google" ? "Google" : "Apple"} login is not enabled in your Supabase Dashboard. Please sign in with Email below or enable the provider in Supabase.`);
+        } else {
+          toast.error(error.message);
+        }
+      }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't sign in. Please try again.");
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("provider is not enabled") || msg.includes("validation_failed")) {
+        toast.error(`${p === "google" ? "Google" : "Apple"} login is not enabled in your Supabase Dashboard. Please sign in with Email below or enable the provider in Supabase.`);
+      } else {
+        toast.error("Couldn't sign in with " + p + ". Please try email sign in.");
+      }
+    } finally {
       setProvider(null);
     }
   };

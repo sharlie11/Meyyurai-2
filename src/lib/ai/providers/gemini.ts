@@ -10,7 +10,7 @@ import {
   RetrievalDocument,
 } from "../provider";
 
-type QueryCategory = "workplace" | "cyber" | "women" | "consumer" | "tenant" | "general";
+type QueryCategory = "workplace" | "contract" | "cyber" | "women" | "consumer" | "tenant" | "accident" | "general";
 
 function categorizeUserQuery(query: string): QueryCategory {
   const q = query.toLowerCase();
@@ -29,9 +29,29 @@ function categorizeUserQuery(query: string): QueryCategory {
     q.includes("resignation") ||
     q.includes("pressure") ||
     q.includes("labour") ||
-    q.includes("labor")
+    q.includes("labor") ||
+    q.includes("stuck") ||
+    q.includes("stucked") ||
+    q.includes("notice period") ||
+    q.includes("hr")
   ) {
     return "workplace";
+  }
+
+  if (
+    q.includes("bond") ||
+    q.includes("bound") ||
+    q.includes("advance") ||
+    q.includes("contract") ||
+    q.includes("agreement") ||
+    q.includes("penalty") ||
+    q.includes("breach") ||
+    q.includes("loan") ||
+    q.includes("recovery") ||
+    q.includes("cheque") ||
+    q.includes("stamp paper")
+  ) {
+    return "contract";
   }
 
   if (
@@ -84,7 +104,40 @@ function categorizeUserQuery(query: string): QueryCategory {
     return "tenant";
   }
 
+  if (
+    q.includes("accident") ||
+    q.includes("bike") ||
+    q.includes("car") ||
+    q.includes("door") ||
+    q.includes("hit") ||
+    q.includes("injury") ||
+    q.includes("personal injury") ||
+    q.includes("vehicle") ||
+    q.includes("driver") ||
+    q.includes("highway") ||
+    q.includes("road") ||
+    q.includes("collision") ||
+    q.includes("mact") ||
+    q.includes("traffic")
+  ) {
+    return "accident";
+  }
+
   return "general";
+}
+
+function sanitizeSearchQuery(query: string): string {
+  if (!query) return "";
+  const stopWords = new Set(["the", "and", "or", "not", "for", "with", "this", "that", "are", "you", "your", "what", "how"]);
+  const cleaned = query
+    .replace(/\b(AND|OR|NOT)\b/gi, " ")
+    .replace(/[^a-zA-Z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const words = Array.from(
+    new Set(cleaned.split(" ").filter((w) => w.length > 1 && !stopWords.has(w.toLowerCase())))
+  );
+  return words.slice(0, 4).join(" ");
 }
 
 export class GeminiProvider implements AIProvider {
@@ -153,7 +206,7 @@ export class GeminiProvider implements AIProvider {
           confidence: "high",
           important_facts: [userQuery],
         },
-        search_query: userQuery,
+        search_query: sanitizeSearchQuery(userQuery),
         domain_tags: [category],
       };
     }
@@ -164,6 +217,8 @@ Your job is to analyze the user's query and conversation history to determine:
 1. Do we have enough information to categorize the issue and construct a targeted legal search query?
 2. If NOT, ask clarifying questions.
 3. If YES, construct an internal_case_summary and a search_query.
+
+CRITICAL INSTRUCTION FOR "search_query": Provide strictly 2 to 4 plain space-separated legal search keywords only (e.g. "unpaid overtime salary labour"). Do NOT use boolean operators (AND, OR, NOT), parentheses, quotes, or punctuation.
 
 Output MUST be valid JSON matching this schema:
 {
@@ -225,7 +280,7 @@ Output MUST be valid JSON matching this schema:
             confidence: "high",
             important_facts: [userQuery],
           },
-          search_query: userQuery,
+          search_query: sanitizeSearchQuery(userQuery),
           domain_tags: [category],
         };
       }
@@ -233,7 +288,11 @@ Output MUST be valid JSON matching this schema:
       const data = (await response.json()) as {
         candidates: { content: { parts: { text: string }[] } }[];
       };
-      return JSON.parse(data.candidates[0].content.parts[0].text);
+      const parsed = JSON.parse(data.candidates[0].content.parts[0].text) as InvestigationResult;
+      if (parsed.search_query) {
+        parsed.search_query = sanitizeSearchQuery(parsed.search_query);
+      }
+      return parsed;
     } catch (err) {
       console.warn("Gemini fetch exception, using rule engine fallback:", err);
       return {
@@ -244,10 +303,11 @@ Output MUST be valid JSON matching this schema:
           confidence: "high",
           important_facts: [userQuery],
         },
-        search_query: userQuery,
+        search_query: sanitizeSearchQuery(userQuery),
         domain_tags: [category],
       };
     }
+
   }
 
   private getFallbackExplanation(category: QueryCategory, userQuery: string): ExplanationGeneratorResponse {
@@ -360,31 +420,89 @@ Output MUST be valid JSON matching this schema:
       };
     }
 
-    // Default General Distress
+    if (category === "contract") {
+      return {
+        situation_summary: `Contract & Financial Agreement Analysis: "${userQuery}". You are seeking guidance regarding an employment bond, cash advance, salary recovery, or contractual dispute.`,
+        relevant_laws: [
+          {
+            act_name: "Indian Contract Act, 1872",
+            section: "Section 27: Agreements in Restraint of Trade Void & Section 74: Compensation for Breach",
+            official_source: "Ministry of Law & Justice, Govt of India",
+            official_url: "https://www.indiacode.nic.in",
+          },
+          {
+            act_name: "Specific Relief Act, 1963",
+            section: "Section 14: Contracts Not Specifically Enforceable",
+            official_source: "Gazette of India",
+            official_url: "https://e-gazette.gov.in",
+          },
+          {
+            act_name: "Code on Wages, 2019",
+            section: "Section 18: Authorized Deductions from Wages",
+            official_source: "Ministry of Labour & Employment",
+            official_url: "https://samadhan.labour.gov.in",
+          },
+        ],
+        what_this_means:
+          "Under Section 27 of the Indian Contract Act 1872, employment bonds imposing unreasonable penalties or restricting a worker's freedom to leave are void. Employers cannot force labor or enforce exorbitant bond amounts beyond actual direct training costs proven.",
+        confidence_level: "High",
+      };
+    }
+
+    if (category === "accident") {
+      return {
+        situation_summary: `Road Accident & Personal Injury Analysis: "${userQuery}". You are seeking guidance on legal rights, driver liability, and compensation claims following a vehicle collision.`,
+        relevant_laws: [
+          {
+            act_name: "Motor Vehicles Act, 1988 & Amendment Act 2019",
+            section: "Section 166 & 168: Application for Compensation for Personal Injury / Death",
+            official_source: "Ministry of Road Transport and Highways (MoRTH)",
+            official_url: "https://morth.nic.in",
+          },
+          {
+            act_name: "Motor Vehicles Act, 1988",
+            section: "Section 134 & 134A: Good Samaritan Protection & Duty of Driver to Render Medical Aid",
+            official_source: "Gazette of India",
+            official_url: "https://e-gazette.gov.in",
+          },
+          {
+            act_name: "Bharatiya Nyaya Sanhita, 2023 (BNS) / IPC",
+            section: "Section 281 & Section 125(a) BNS (IPC Sec 279 & 337): Rash Driving & Causing Hurt Endangering Life",
+            official_source: "Ministry of Law & Justice, Govt of India",
+            official_url: "https://www.indiacode.nic.in",
+          },
+        ],
+        what_this_means:
+          "Under Indian law, opening a vehicle door negligently into oncoming traffic causing a collision constitutes rash and negligent behavior under criminal law (BNS Sec 281/125). The injured victim has the absolute statutory right to claim full medical expenses, loss of income, and disability compensation from the vehicle driver and third-party insurance company via the Motor Accident Claims Tribunal (MACT).",
+        confidence_level: "High",
+      };
+    }
+
+    // Default General Legal Support
     return {
-      situation_summary: `Citizens Rights & Support Analysis: "${userQuery}". You are dealing with a difficult situation and seeking guidance on where to turn.`,
+      situation_summary: `Legal Guidance Analysis: "${userQuery}". You are seeking guidance on your legal rights and statutory support options in India.`,
       relevant_laws: [
         {
           act_name: "Constitution of India",
-          section: "Article 21: Right to Life, Dignity and Personal Liberty",
+          section: "Article 21: Right to Life, Personal Liberty & Fair Treatment",
           official_source: "Ministry of Law & Justice, Govt of India",
           official_url: "https://lawmin.gov.in",
         },
         {
           act_name: "Legal Services Authorities Act 1987",
-          section: "Section 12: Free Legal Services & Counseling for Citizens",
+          section: "Section 12: Free Legal Aid & Advice for Citizens",
           official_source: "National Legal Services Authority (NALSA)",
           official_url: "https://nalsa.gov.in",
         },
         {
-          act_name: "Mental Healthcare Act 2017",
-          section: "Section 29: Right to Mental Health Support & Crisis Care",
-          official_source: "Ministry of Health and Family Welfare",
-          official_url: "https://mohfw.gov.in",
+          act_name: "Indian Penal Code / Bharatiya Nyaya Sanhita",
+          section: "Protection Against Coercion, Extortion & Wrongful Confinement",
+          official_source: "Ministry of Home Affairs",
+          official_url: "https://mha.gov.in",
         },
       ],
       what_this_means:
-        "Every citizen in India has a fundamental right to safety, emotional support, and free legal assistance. You do not have to handle distress alone; official government counseling and legal bodies exist to support you.",
+        "Every citizen in India has a fundamental right to fair treatment, dignity, and access to free legal assistance via statutory legal aid bodies. Coercion or unauthorized financial withholding is legally challengeable.",
       confidence_level: "High",
     };
   }
@@ -396,7 +514,7 @@ Output MUST be valid JSON matching this schema:
   ): Promise<ExplanationGeneratorResponse> {
     const category = categorizeUserQuery(userQuery);
 
-    if (!this.apiKey || retrievedDocuments.length === 0) {
+    if (!this.apiKey) {
       return this.getFallbackExplanation(category, userQuery);
     }
 
@@ -627,40 +745,131 @@ Output MUST be valid JSON matching this schema:
       };
     }
 
+    if (category === "contract") {
+      return {
+        why_these_laws_apply:
+          "Indian Contract Act 1872 and Labour Codes prohibit unfair employment bonds, exorbitant penalty claims, or illegal advance recoveries.",
+        immediate_actions: [
+          "Preserve written copies of your employment agreement, bond clauses, advance receipts, and email communications.",
+          "Issue a formal legal notice through an advocate asserting that unreasonable restraint clauses under Section 27 are void.",
+          "File a dispute with the Labour Commissioner / SAMADHAN Portal if the employer withholds salary or relieving documents.",
+        ],
+        where_to_file: {
+          authority: "Office of the Labour Commissioner / Civil Court / SAMADHAN",
+          portal_url: "https://samadhan.labour.gov.in",
+          contact_details: "Labour Helpline: 14489 / NALSA: 15100",
+          why_this_authority:
+            "Statutory labor authorities and legal aid bodies handle employment contract disputes and unauthorized wage/relieving withholding.",
+        },
+        government_helplines: [
+          {
+            name: "Ministry of Labour SAMADHAN Helpline",
+            number: "14489",
+            description: "24x7 Government Dispute & Grievance Portal for Workers",
+          },
+          {
+            name: "National Legal Aid Helpline (NALSA)",
+            number: "15100",
+            description: "24x7 Free Legal Advice & Advocate Assistance",
+          },
+        ],
+        documents_to_prepare: [
+          "Employment Offer Letter, Agreement & Bond Terms",
+          "Salary Slip & Cash Advance Bank Statements",
+          "Resignation Letter & Employer Communications",
+        ],
+        expected_process: [
+          "1. Conciliation hearing by Labour Officer / Advocate.",
+          "2. Waiver or settlement of invalid bond penalty claims.",
+          "3. Issuance of Relieving Letter & Salary Settlement.",
+        ],
+        time_limits: "Disputes can be raised immediately upon withholding or notice.",
+      };
+    }
+
+    if (category === "accident") {
+      return {
+        why_these_laws_apply:
+          "The Motor Vehicles Act 1988 and BNS 2023 protect road accident victims, establishing strict third-party liability on vehicle owners/insurers and protecting victims against unprovoked road hazards.",
+        immediate_actions: [
+          "Obtain immediate medical treatment and request a certified Copy of the Casualty Accident Register / Discharge Summary.",
+          "Lodge an FIR or General Diary (GD) entry at the local Traffic Police Station covering the accident location.",
+          "Collect vehicle registration number, car driver details, and Third-Party Insurance policy information.",
+          "File a Compensation Petition before the Motor Accident Claims Tribunal (MACT) in your district.",
+        ],
+        where_to_file: {
+          authority: "Motor Accident Claims Tribunal (MACT) / Local Traffic Police Station",
+          portal_url: "https://morth.nic.in",
+          contact_details: "National Road Emergency: 108 / Highway Patrol: 1033",
+          why_this_authority:
+            "Statutory tribunal established under Section 165 of Motor Vehicles Act 1988 to adjudicate road accident compensation claims.",
+        },
+        government_helplines: [
+          {
+            name: "National Road Emergency & Medical Services",
+            number: "108",
+            description: "24x7 Emergency Ambulance & Casualty Medical Services",
+          },
+          {
+            name: "National Highway Emergency Helpline (MoRTH)",
+            number: "1033",
+            description: "24x7 Road Accident Assistance on National Highways",
+          },
+          {
+            name: "National Emergency Response System",
+            number: "112",
+            description: "24x7 All-in-One Emergency Helpline for Police & Ambulance",
+          },
+        ],
+        documents_to_prepare: [
+          "Police FIR / General Diary (GD) Copy",
+          "Hospital Casualty Records, Discharge Summary & Medical Bills",
+          "Registration Certificate (RC) & Insurance Copy of Offending Car",
+          "Salary Slip / Income Proof of Injured Victim (for compensation calculation)",
+        ],
+        expected_process: [
+          "1. Immediate FIR registration and police investigation of accident spot.",
+          "2. Submission of Detailed Accident Report (DAR) by police to MACT within 90 days.",
+          "3. MACT summons insurance company for compensation settlement or formal judgment.",
+        ],
+        time_limits: "Claim petition should ideally be filed within 6 months of the accident.",
+      };
+    }
+
     return {
       why_these_laws_apply:
-        "Constitutional provisions and legal services authorities guarantee free counseling, legal representation, and emergency care for any citizen in distress.",
+        "Constitutional provisions and legal services authorities guarantee free legal counseling, representation, and statutory grievance support for citizens.",
       immediate_actions: [
-        "Call Tele-MANAS (14416) for free 24x7 emotional & stress counseling",
-        "Contact NALSA Helpline (15100) for free legal aid",
-        "Gather ID proof and a short summary of your situation",
+        "Contact NALSA Helpline (15100) for free legal aid and advocate assignment",
+        "Gather ID proof and a short chronological summary of your issue",
+        "Submit a formal complaint to the relevant district authority or SAMADHAN portal",
       ],
       where_to_file: {
         authority: "District Legal Services Authority (DLSA) / NALSA",
         portal_url: "https://nalsa.gov.in",
-        contact_details: "Legal Aid Helpline: 15100 / Tele-MANAS: 14416",
+        contact_details: "Legal Aid Helpline: 15100",
         why_this_authority:
           "Statutory body established by Parliament to provide free legal aid and advice to citizens.",
       },
       government_helplines: [
-        {
-          name: "Tele-MANAS Mental Health Support",
-          number: "14416",
-          description: "24x7 Free & Confidential Govt Psychological Support",
-        },
         {
           name: "National Legal Aid Helpline (NALSA)",
           number: "15100",
           description: "24x7 Free Legal Advice & Lawyer Assistance",
         },
         {
+          name: "Ministry of Labour SAMADHAN Helpline",
+          number: "14489",
+          description: "24x7 Government Dispute & Grievance Portal",
+        },
+        {
           name: "Emergency Response Support System (ERSS)",
           number: "112",
-          description: "24x7 Nationwide Police & Emergency Assistance",
+          description: "24x7 Nationwide Emergency Assistance",
         },
       ],
       documents_to_prepare: [
-        "Government ID Proof (Aadhaar / Voter ID / Ration Card)",
+        "Government ID Proof (Aadhaar / Voter ID)",
         "Brief Written Summary of your Problem",
       ],
       expected_process: [
@@ -822,6 +1031,31 @@ Output MUST be valid JSON matching this schema:
           ],
           continue_guidance: [
             "Track complaint status on NCW portal",
+          ],
+        };
+      }
+
+      if (category === "accident") {
+        return {
+          current_stage: "Road Accident Personal Injury Action Plan",
+          immediate_actions: [
+            "Call 108 for medical documentation and emergency assistance",
+            "Lodge FIR at local Traffic Police Station covering accident spot",
+            "Gather medical bills, hospital records, and car driver registration details",
+          ],
+          authorities_to_contact: [
+            "Local Traffic Police Station",
+            "Motor Accident Claims Tribunal (MACT)",
+            "Third-Party Insurance Company",
+          ],
+          expected_outcomes: [
+            "Full reimbursement of medical expenses, pain & suffering compensation, and third-party insurance payout",
+          ],
+          additional_information_needed: [
+            "Police FIR copy, hospital casualty register, and offending car insurance policy details",
+          ],
+          continue_guidance: [
+            "Submit Detailed Accident Report (DAR) to MACT tribunal within 90 days",
           ],
         };
       }

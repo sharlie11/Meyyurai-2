@@ -11,7 +11,15 @@ import {
   JSON_HEADERS,
   createResponse,
 } from "@/lib/server-utils";
-import { getAIProvider, GovernmentService, RetrievalDocument } from "@/lib/ai/provider";
+import {
+  getAIProvider,
+  GovernmentService,
+  RetrievalDocument,
+  ExplanationGeneratorResponse,
+  GuidanceEngineResponse,
+  ActionPlanGeneratorResponse,
+} from "@/lib/ai/provider";
+import { fetchAndIngestIndiaCodeAct, resolveActTitleToHandle } from "@/lib/ingestion/indiacode-fetcher";
 import type { Json } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/api/$")({
@@ -711,16 +719,36 @@ async function handleAiRoutes(request: Request, action: string, method: string):
         retrievedDocs = rpcData as unknown as RetrievalDocument[];
       }
 
+      // Check if query contains explicit India Code handle/URL or retrieved zero docs
+      const explicitHandle = (question + " " + searchQuery).match(/123456789\/\d+/);
+      let targetHandle: string | null = explicitHandle ? explicitHandle[0] : null;
+
+      if (!targetHandle && retrievedDocs.length === 0) {
+        // Resolve Act title or search query to India Code handle ID via simple-search
+        targetHandle = await resolveActTitleToHandle(searchQuery || question);
+      }
+
+      if (targetHandle) {
+        console.log(`\n🌐 [RAG Live Fetch]: Target handle "${targetHandle}" resolved. Triggering live on-demand fetcher...`);
+        const ingestRes = await fetchAndIngestIndiaCodeAct(targetHandle);
+
+        if (ingestRes.success) {
+          const { data: retryRpc } = await serviceClient.rpc("hybrid_search_legal_chunks", {
+            query_text: searchQuery,
+            query_embedding: queryEmbedding,
+            match_count: 5,
+          });
+          if (retryRpc) {
+            retrievedDocs = retryRpc as unknown as RetrievalDocument[];
+          }
+        }
+      } else if (retrievedDocs.length === 0) {
+        console.log(`\n⚠️ [RAG Live Fetch]: No confident India Code match resolved for query "${searchQuery}". Proceeding with zero-document guidance mode.`);
+      }
+
       // Stage 5: Citation Verification
       const verifiedDocs = retrievedDocs.filter(
         (doc) => doc.act_name && doc.official_text && doc.official_text.trim() !== "",
-      );
-
-      // Stage 6: Explain the Law
-      const explanation = await aiProvider.explain(
-        question,
-        investigation.internal_case_summary,
-        verifiedDocs,
       );
 
       // Stage 6b: Retrieve Government Services
@@ -736,32 +764,64 @@ async function handleAiRoutes(request: Request, action: string, method: string):
         },
       ] as GovernmentService[];
 
-      // Stage 7: Guidance Engine
-      const guidance = await aiProvider.guide(explanation, retrievedServices);
+      // Stage 6, 7 & 8: Optimized Combined Generation (Single LLM Pass)
+      let explanation: ExplanationGeneratorResponse;
+      let guidance: GuidanceEngineResponse;
+      let actionPlan: ActionPlanGeneratorResponse;
 
-      // Stage 8: Action Plan Generator
-      const actionPlan = await aiProvider.generateActionPlan(guidance);
+      if (typeof aiProvider.generateCombinedRAGResponse === "function") {
+        const combined = await aiProvider.generateCombinedRAGResponse(
+          question,
+          investigation.internal_case_summary,
+          verifiedDocs,
+          retrievedServices,
+        );
+        explanation = combined.explanation;
+        guidance = combined.guidance;
+        actionPlan = combined.action_plan;
+      } else {
+        explanation = await aiProvider.explain(
+          question,
+          investigation.internal_case_summary,
+          verifiedDocs,
+        );
+        guidance = await aiProvider.guide(explanation, retrievedServices);
+        actionPlan = await aiProvider.generateActionPlan(guidance);
+      }
 
+
+      const activeProvider = (process.env.AI_PROVIDER || "gemini").toLowerCase();
+      const isOllama = activeProvider === "ollama" || activeProvider === "local";
+      const ollamaModel = process.env.OLLAMA_MODEL || "llama3";
       const hasApiKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== "");
-      const isFallback = !hasApiKey || verifiedDocs.length === 0;
+
+      const embeddingSuccess = isOllama
+        ? queryEmbedding.some((val) => val !== 0)
+        : hasApiKey && queryEmbedding.some((val) => val !== 0);
+
+      const providerSuccess = isOllama ? true : hasApiKey;
+      const isFallback = !providerSuccess || verifiedDocs.length === 0;
       const latencyMs = Date.now() - startTime;
       const detectedCategory = investigation.domain_tags?.[0] || "general";
 
       console.log(`\n=================== [MEYYURAI AI LOG] ===================`);
       console.log(`1. Received Query     : "${question}"`);
       console.log(`2. Detected Category  : ${detectedCategory}`);
-      console.log(`3. Embedding Generated: ${hasApiKey ? "YES" : "NO (Zero-Vector Fallback)"}`);
-      console.log(`4. Chunks Retrieved   : ${verifiedDocs.length}`);
-      console.log(`5. Gemini Called      : ${hasApiKey ? "YES" : "NO (Local Rule Engine)"}`);
-      console.log(`6. Response Time      : ${latencyMs} ms`);
-      console.log(`7. Fallback Used      : ${isFallback ? "TRUE (Warning: Fallback Mode)" : "FALSE (Verified Gemini+RAG)"}`);
+      console.log(`3. Provider Active    : ${isOllama ? `OLLAMA (${ollamaModel})` : "GEMINI (gemini-2.5-pro)"}`);
+      console.log(`4. Embedding Generated: ${embeddingSuccess ? `YES (${queryEmbedding.length}-dim)` : "NO (Zero-Vector Fallback)"}`);
+      console.log(`5. Chunks Retrieved   : ${verifiedDocs.length}`);
+      console.log(`6. AI Call Executed   : YES (${isOllama ? "Ollama Native REST /api/chat" : "Gemini API"})`);
+      console.log(`7. Response Time      : ${latencyMs} ms`);
+      console.log(`8. Fallback Used      : ${isFallback ? "TRUE (Warning: Fallback Mode)" : `FALSE (Verified ${isOllama ? "Ollama" : "Gemini"}+RAG)`}`);
       console.log(`=========================================================\n`);
+
 
       // Combine final AI response
       const aiResponse = {
         needs_clarification: false,
         is_fallback: isFallback,
         retrieval_count: verifiedDocs.length,
+        internal_case_summary: investigation.internal_case_summary,
         explanation,
         guidance,
         action_plan: actionPlan,
@@ -1224,6 +1284,16 @@ async function handleAdminRoutes(
 
     if (dbError) return createResponse({ error: dbError.message }, 400);
     return createResponse({ emergencies: data });
+  }
+
+  if (action === "ingest" && method === "POST") {
+    const body = await request.json().catch(() => ({}));
+    const { handle_or_url, force } = body;
+    if (!handle_or_url) {
+      return createResponse({ error: "handle_or_url parameter is required" }, 400);
+    }
+    const result = await fetchAndIngestIndiaCodeAct(handle_or_url, { forceRefetch: Boolean(force) });
+    return createResponse(result, result.success ? 200 : 500);
   }
 
   return createResponse({ error: "Not Found" }, 404);

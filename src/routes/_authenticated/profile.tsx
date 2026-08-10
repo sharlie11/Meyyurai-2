@@ -63,6 +63,7 @@ function ProfileScreen() {
   const [dark, setDark] = useState(false);
   const [profile, setProfile] = useState<{
     full_name?: string | null;
+    email?: string | null;
     phone_number?: string | null;
   } | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -81,22 +82,41 @@ function ProfileScreen() {
 
   useEffect(() => {
     (async () => {
+      const activeUser = await getCurrentUser();
       const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return;
-      const [{ data: p }, { data: cs }] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("full_name, phone_number")
-          .eq("id", u.user.id)
-          .maybeSingle(),
-        supabase
-          .from("emergency_contacts")
-          .select("id, name, phone, relationship")
-          .eq("user_id", u.user.id)
-          .order("created_at"),
-      ]);
-      setProfile(p);
-      setContacts((cs as Contact[]) || []);
+      const currentUser = u?.user || (activeUser ? { id: activeUser.id, email: activeUser.email, user_metadata: activeUser.user_metadata } : null);
+
+      if (currentUser) {
+        let fullName = currentUser.user_metadata?.full_name;
+        if (!fullName && currentUser.email) {
+          fullName = currentUser.email.split("@")[0];
+        }
+
+        setProfile({
+          full_name: fullName || "Meyyurai User",
+          email: currentUser.email || "",
+          phone_number: currentUser.email || "Active Member",
+        });
+
+        if (u?.user) {
+          const { data: cs } = await supabase
+            .from("emergency_contacts")
+            .select("id, name, phone, relationship")
+            .eq("user_id", u.user.id)
+            .order("created_at");
+          if (cs) setContacts(cs as Contact[]);
+        } else {
+          const stored = localStorage.getItem("meyyurai_local_contacts");
+          if (stored) {
+            try { setContacts(JSON.parse(stored)); } catch (e) {}
+          }
+        }
+      } else {
+        const stored = localStorage.getItem("meyyurai_local_contacts");
+        if (stored) {
+          try { setContacts(JSON.parse(stored)); } catch (e) {}
+        }
+      }
     })();
   }, []);
 
@@ -115,35 +135,65 @@ function ProfileScreen() {
 
   const onAddContact = async () => {
     if (!newContact.name || !newContact.phone) {
-      toast.error("Name and phone are required");
+      toast.error("Name and phone number are required");
       return;
     }
     setBusy(true);
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) return;
-    const { data, error } = await supabase
-      .from("emergency_contacts")
-      .insert({ user_id: u.user.id, ...newContact })
-      .select("id, name, phone, relationship")
-      .single();
-    setBusy(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      if (u?.user) {
+        const { data, error } = await supabase
+          .from("emergency_contacts")
+          .insert({
+            user_id: u.user.id,
+            name: newContact.name,
+            phone: newContact.phone,
+            relationship: newContact.relationship || null,
+          })
+          .select("id, name, phone, relationship")
+          .single();
+
+        if (error) {
+          toast.error(error.message);
+          return;
+        }
+        setContacts((prev) => [...prev, data as Contact]);
+        toast.success("Emergency contact saved to SQL database!");
+      } else {
+        const newLocal: Contact = {
+          id: "cnt_" + Date.now().toString(36),
+          name: newContact.name,
+          phone: newContact.phone,
+          relationship: newContact.relationship || null,
+        };
+        const updated = [...contacts, newLocal];
+        setContacts(updated);
+        localStorage.setItem("meyyurai_local_contacts", JSON.stringify(updated));
+        toast.success("Emergency contact saved!");
+      }
+
+      setNewContact({ name: "", phone: "", relationship: "" });
+      setAddOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to add contact");
+    } finally {
+      setBusy(false);
     }
-    setContacts([...contacts, data as Contact]);
-    setNewContact({ name: "", phone: "", relationship: "" });
-    setAddOpen(false);
-    toast.success("Contact added");
   };
 
   const onRemoveContact = async (id: string) => {
-    const { error } = await supabase.from("emergency_contacts").delete().eq("id", id);
-    if (error) {
-      toast.error(error.message);
-      return;
+    const { data: u } = await supabase.auth.getUser();
+    if (u?.user && !id.startsWith("cnt_")) {
+      const { error } = await supabase.from("emergency_contacts").delete().eq("id", id);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
     }
-    setContacts(contacts.filter((c) => c.id !== id));
+    const updated = contacts.filter((c) => c.id !== id);
+    setContacts(updated);
+    localStorage.setItem("meyyurai_local_contacts", JSON.stringify(updated));
+    toast.success("Contact removed");
   };
 
   const onChangePassword = async () => {
@@ -197,7 +247,7 @@ function ProfileScreen() {
               {profile?.full_name || "Meyyurai user"}
             </p>
             <p className="text-xs text-muted-foreground">
-              {profile?.phone_number || t("profile.subtitle.tap")}
+              {profile?.email || profile?.phone_number || t("profile.subtitle.tap")}
             </p>
           </div>
           <ChevronRight className="h-4 w-4 text-muted-foreground" />

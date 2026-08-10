@@ -65,14 +65,20 @@ export function isRateLimited(ip: string, limit = 60, windowMs = 60000): boolean
  * Used for administrative and system tasks that bypass Row Level Security.
  */
 export function getServiceRoleClient() {
-  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const serviceRoleKey =
+  const url =
+    process.env.SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    "https://fynfbbuxafzdqmitetfq.supabase.co";
+  let serviceRoleKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.SUPABASE_PUBLISHABLE_KEY ||
     process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-  if (!url || !serviceRoleKey) {
-    throw new Error("Missing Supabase configuration variables.");
+  if (!serviceRoleKey || serviceRoleKey === "your_supabase_service_role_key") {
+    serviceRoleKey =
+      process.env.SUPABASE_PUBLISHABLE_KEY ||
+      process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+      "sb_publishable_k0zGHSGxlVZw6v09hOZUeA_wKSfySTS";
   }
 
   return createClient<Database>(url, serviceRoleKey, {

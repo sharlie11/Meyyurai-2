@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   Siren,
@@ -15,6 +15,8 @@ import {
   Scale,
   HandHeart,
   X,
+  AlertTriangle,
+  Send,
 } from "lucide-react";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import {
@@ -27,6 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -95,6 +98,7 @@ function toneClasses(tone: EmergencyContact["tone"]) {
 }
 
 function EmergencyScreen() {
+  const navigate = useNavigate();
   const [sosOpen, setSosOpen] = useState(false);
   const [confirm, setConfirm] = useState<EmergencyContact | null>(null);
   const [countdown, setCountdown] = useState(3);
@@ -135,6 +139,115 @@ function EmergencyScreen() {
     );
   };
 
+  const alertTrustedContacts = async () => {
+    setSosOpen(false);
+    toast.info("Preparing Emergency SOS Alert & Location...");
+
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      let contactsList: { name: string; phone: string }[] = [];
+
+      if (u?.user) {
+        const { data: dbContacts } = await supabase
+          .from("emergency_contacts")
+          .select("name, phone")
+          .eq("user_id", u.user.id);
+        if (dbContacts && dbContacts.length > 0) {
+          contactsList = dbContacts;
+        }
+      }
+
+      if (contactsList.length === 0) {
+        const stored = localStorage.getItem("meyyurai_local_contacts");
+        if (stored) {
+          try {
+            contactsList = JSON.parse(stored);
+          } catch (e) {}
+        }
+      }
+
+      if (contactsList.length === 0) {
+        toast.error("No emergency contacts found! Please add your contacts first.");
+        navigate({ to: "/profile" });
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const mapUrl = `https://maps.google.com/?q=${lat},${lng}`;
+          const sosText = `🚨 MEYYURAI EMERGENCY SOS ALERT! I need immediate help. My current live GPS location: ${mapUrl}`;
+
+          if (u?.user) {
+            await supabase
+              .from("emergency_events")
+              .insert({
+                user_id: u.user.id,
+                emergency_type: "SOS_ALERT",
+                latitude: lat,
+                longitude: lng,
+                accuracy: pos.coords.accuracy,
+                device_info: {
+                  user_agent: navigator.userAgent,
+                  platform: navigator.platform,
+                },
+                notes: `Alert sent to contacts: ${contactsList.map((c) => `${c.name} (${c.phone})`).join(", ")}`,
+                status: "active",
+              })
+              .catch(() => {});
+          }
+
+          const phoneNumbers = contactsList.map((c) => c.phone).join(",");
+          const smsUrl = `sms:${phoneNumbers}?body=${encodeURIComponent(sosText)}`;
+
+          toast.success(
+            `SOS Logged! Alerting ${contactsList.map((c) => c.name).join(", ")}...`,
+          );
+
+          if (navigator.share) {
+            navigator
+              .share({
+                title: "🚨 MEYYURAI EMERGENCY SOS ALERT",
+                text: sosText,
+                url: mapUrl,
+              })
+              .catch(() => {
+                window.location.href = smsUrl;
+              });
+          } else {
+            window.location.href = smsUrl;
+          }
+        },
+        async () => {
+          const sosText = `🚨 MEYYURAI EMERGENCY SOS ALERT! I need immediate help. Please call or reach out immediately!`;
+          const phoneNumbers = contactsList.map((c) => c.phone).join(",");
+          const smsUrl = `sms:${phoneNumbers}?body=${encodeURIComponent(sosText)}`;
+
+          if (u?.user) {
+            await supabase
+              .from("emergency_events")
+              .insert({
+                user_id: u.user.id,
+                emergency_type: "SOS_ALERT",
+                notes: `Alert sent to contacts without GPS: ${contactsList.map((c) => `${c.name} (${c.phone})`).join(", ")}`,
+                status: "active",
+              })
+              .catch(() => {});
+          }
+
+          toast.success(
+            `SOS Logged! Alerting ${contactsList.map((c) => c.name).join(", ")}...`,
+          );
+          window.location.href = smsUrl;
+        },
+        { enableHighAccuracy: true, timeout: 10000 },
+      );
+    } catch (err) {
+      toast.error("Failed to trigger SOS alert. Dial 112 directly.");
+    }
+  };
+
   return (
     <div className="animate-fade-up">
       <ScreenHeader
@@ -151,7 +264,7 @@ function EmergencyScreen() {
             <button
               onClick={() => setSosOpen(true)}
               aria-label="Activate SOS"
-              className="animate-sos flex h-40 w-40 items-center justify-center rounded-full bg-emergency text-emergency-foreground transition-transform active:scale-95"
+              className="animate-sos flex h-40 w-40 items-center justify-center rounded-full bg-emergency text-emergency-foreground transition-transform active:scale-95 cursor-pointer shadow-lg hover:brightness-110"
             >
               <div className="flex flex-col items-center">
                 <Siren className="h-10 w-10" />
@@ -176,7 +289,7 @@ function EmergencyScreen() {
             <li key={c.id}>
               <button
                 onClick={() => setConfirm(c)}
-                className="flex h-full w-full flex-col items-start gap-3 rounded-2xl border border-border bg-card p-4 text-left shadow-soft transition-all active:scale-[0.98]"
+                className="flex h-full w-full flex-col items-start gap-3 rounded-2xl border border-border bg-card p-4 text-left shadow-soft transition-all active:scale-[0.98] cursor-pointer hover:border-primary/40"
               >
                 <span
                   className={`flex h-10 w-10 items-center justify-center rounded-xl ${toneClasses(c.tone)}`}
@@ -211,7 +324,7 @@ function EmergencyScreen() {
           </div>
           <button
             onClick={shareLocation}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary-hover"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary-hover cursor-pointer transition-colors"
           >
             <Navigation className="h-4 w-4" />
             Share live location
@@ -269,7 +382,7 @@ function EmergencyScreen() {
                 setSosOpen(false);
                 setConfirm(contacts[0]);
               }}
-              className="flex w-full items-center gap-3 rounded-2xl bg-emergency px-4 py-4 text-left text-emergency-foreground"
+              className="flex w-full items-center gap-3 rounded-2xl bg-emergency px-4 py-4 text-left text-emergency-foreground cursor-pointer hover:brightness-110"
             >
               <Phone className="h-5 w-5" />
               <div>
@@ -282,7 +395,7 @@ function EmergencyScreen() {
                 setSosOpen(false);
                 shareLocation();
               }}
-              className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-4 py-4 text-left"
+              className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-4 py-4 text-left cursor-pointer hover:bg-secondary"
             >
               <MapPin className="h-5 w-5 text-primary" />
               <div>
@@ -291,16 +404,13 @@ function EmergencyScreen() {
               </div>
             </button>
             <button
-              onClick={() => {
-                setSosOpen(false);
-                toast.success("Trusted contacts alerted");
-              }}
-              className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-4 py-4 text-left"
+              onClick={alertTrustedContacts}
+              className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-4 py-4 text-left cursor-pointer hover:bg-secondary"
             >
               <Users className="h-5 w-5 text-primary" />
               <div>
                 <p className="text-sm font-semibold text-foreground">Alert Trusted Contacts</p>
-                <p className="text-xs text-muted-foreground">Send an instant SOS message</p>
+                <p className="text-xs text-muted-foreground">Send an instant SOS message with your GPS location</p>
               </div>
             </button>
           </div>
