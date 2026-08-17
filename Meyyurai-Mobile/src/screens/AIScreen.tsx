@@ -13,7 +13,7 @@ import {
 import { Colors } from '../theme/colors';
 import { Header } from '../components/Header';
 import { Send, Bot, User, Sparkles, Scale, AlertCircle } from 'lucide-react-native';
-import { sendLegalAIQuery, QUICK_LEGAL_PROMPTS, ChatMessage } from '../lib/ai-provider';
+import { fetchBackendAIQuery, sendLegalAIQuery, QUICK_LEGAL_PROMPTS, ChatMessage } from '../lib/ai-provider';
 import { useI18n } from '../lib/i18n';
 
 export const AIScreen = () => {
@@ -50,7 +50,7 @@ export const AIScreen = () => {
     }, 100);
 
     try {
-      const aiResponse = await sendLegalAIQuery(query, lang);
+      const aiResponse = await fetchBackendAIQuery(query, lang);
       setMessages((prev) => [...prev, aiResponse]);
     } catch (e) {
       const errorMsg: ChatMessage = {
@@ -69,122 +69,126 @@ export const AIScreen = () => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <View style={styles.container}>
       <Header title="Meyyurai AI" subtitle="Plain-language Legal Assistance" />
 
-      {/* CHAT MESSAGES */}
-      <ScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={styles.chatContainer}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 25}
       >
-        {messages.map((msg) => (
-          <View
-            key={msg.id}
-            style={[
-              styles.messageBubble,
-              msg.sender === 'user' ? styles.userBubble : styles.aiBubble,
-            ]}
-          >
-            <View style={styles.senderHeader}>
-              <View style={msg.sender === 'user' ? styles.userIconBg : styles.aiIconBg}>
-                {msg.sender === 'user' ? (
-                  <User size={14} color="#FFFFFF" />
-                ) : (
-                  <Bot size={14} color={Colors.accentGold} />
-                )}
-              </View>
-              <Text style={styles.senderName}>{msg.sender === 'user' ? 'You' : 'Meyyurai AI'}</Text>
-              <Text style={styles.timestamp}>{msg.timestamp}</Text>
-            </View>
-
-            <Text style={styles.messageText}>{msg.text}</Text>
-
-            {/* LAWS REFERENCED */}
-            {msg.lawsReferenced && msg.lawsReferenced.length > 0 && (
-              <View style={styles.lawsBox}>
-                <View style={styles.lawsHeader}>
-                  <Scale size={14} color={Colors.primaryLight} />
-                  <Text style={styles.lawsTitle}>LAWS & SECTIONS CITED:</Text>
-                </View>
-                {msg.lawsReferenced.map((law, i) => (
-                  <Text key={i} style={styles.lawItem}>
-                    • {law}
-                  </Text>
-                ))}
-              </View>
-            )}
-
-            {/* ACTION STEPS */}
-            {msg.steps && msg.steps.length > 0 && (
-              <View style={styles.stepsBox}>
-                <Text style={styles.stepsTitle}>RECOMMENDED ACTION STEPS:</Text>
-                {msg.steps.map((step, idx) => (
-                  <Text key={idx} style={styles.stepItem}>
-                    {idx + 1}. {step}
-                  </Text>
-                ))}
-              </View>
-            )}
-          </View>
-        ))}
-
-        {loading && (
-          <View style={styles.loadingBubble}>
-            <ActivityIndicator size="small" color={Colors.primaryLight} />
-            <Text style={styles.loadingText}>Analyzing legal sections & guidance...</Text>
-          </View>
-        )}
-      </ScrollView>
-
-      {/* QUICK SUGGESTIONS CHIPS */}
-      <View style={styles.suggestionsContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {QUICK_LEGAL_PROMPTS.map((prompt, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.promptChip}
-              onPress={() => handleSend(prompt)}
-              activeOpacity={0.7}
-            >
-              <Sparkles size={12} color={Colors.accentGold} style={{ marginRight: 6 }} />
-              <Text style={styles.promptChipText}>{prompt}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* DISCLAIMER */}
-      <View style={styles.disclaimerRow}>
-        <AlertCircle size={12} color={Colors.textMuted} />
-        <Text style={styles.disclaimerText}>
-          AI guidance is for informational education and not a substitute for formal legal representation.
-        </Text>
-      </View>
-
-      {/* INPUT BAR */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder={t('ai.placeholder')}
-          placeholderTextColor={Colors.textDim}
-          value={inputText}
-          onChangeText={setInputText}
-          multiline
-        />
-        <TouchableOpacity
-          style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
-          onPress={() => handleSend()}
-          disabled={!inputText.trim() || loading}
-          activeOpacity={0.8}
+        {/* CHAT MESSAGES */}
+        <ScrollView
+          ref={scrollViewRef}
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.chatContainer}
+          showsVerticalScrollIndicator={false}
         >
-          <Send size={18} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+          {messages.map((msg) => (
+            <View
+              key={msg.id}
+              style={[
+                styles.messageBubble,
+                msg.sender === 'user' ? styles.userBubble : styles.aiBubble,
+              ]}
+            >
+              <View style={styles.senderHeader}>
+                <View style={msg.sender === 'user' ? styles.userIconBg : styles.aiIconBg}>
+                  {msg.sender === 'user' ? (
+                    <User size={14} color="#FFFFFF" />
+                  ) : (
+                    <Bot size={14} color={Colors.primary} />
+                  )}
+                </View>
+                <Text style={styles.senderName}>{msg.sender === 'user' ? 'You' : 'Meyyurai AI'}</Text>
+                <Text style={styles.timestamp}>{msg.timestamp}</Text>
+              </View>
+
+              <Text style={styles.messageText}>{msg.text}</Text>
+
+              {/* LAWS REFERENCED */}
+              {msg.lawsReferenced && msg.lawsReferenced.length > 0 && (
+                <View style={styles.lawsBox}>
+                  <View style={styles.lawsHeader}>
+                    <Scale size={14} color={Colors.primary} />
+                    <Text style={styles.lawsTitle}>LAWS & SECTIONS CITED:</Text>
+                  </View>
+                  {msg.lawsReferenced.map((law, i) => (
+                    <Text key={i} style={styles.lawItem}>
+                      • {law}
+                    </Text>
+                  ))}
+                </View>
+              )}
+
+              {/* ACTION STEPS */}
+              {msg.steps && msg.steps.length > 0 && (
+                <View style={styles.stepsBox}>
+                  <Text style={styles.stepsTitle}>RECOMMENDED ACTION STEPS:</Text>
+                  {msg.steps.map((step, idx) => (
+                    <Text key={idx} style={styles.stepItem}>
+                      {idx + 1}. {step}
+                    </Text>
+                  ))}
+                </View>
+              )}
+            </View>
+          ))}
+
+          {loading && (
+            <View style={styles.loadingBubble}>
+              <ActivityIndicator size="small" color={Colors.primary} />
+              <Text style={styles.loadingText}>Analyzing legal sections & guidance...</Text>
+            </View>
+          )}
+        </ScrollView>
+
+        {/* QUICK SUGGESTIONS CHIPS */}
+        <View style={styles.suggestionsContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {QUICK_LEGAL_PROMPTS.map((prompt, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.promptChip}
+                onPress={() => handleSend(prompt)}
+                activeOpacity={0.7}
+              >
+                <Sparkles size={12} color={Colors.accentGold} style={{ marginRight: 6 }} />
+                <Text style={styles.promptChipText}>{prompt}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* DISCLAIMER */}
+        <View style={styles.disclaimerRow}>
+          <AlertCircle size={12} color={Colors.textMuted} />
+          <Text style={styles.disclaimerText}>
+            AI guidance is for informational education and not a substitute for formal legal representation.
+          </Text>
+        </View>
+
+        {/* INPUT BAR */}
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder={t('ai.placeholder')}
+            placeholderTextColor={Colors.textDim}
+            value={inputText}
+            onChangeText={setInputText}
+            multiline
+          />
+          <TouchableOpacity
+            style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
+            onPress={() => handleSend()}
+            disabled={!inputText.trim() || loading}
+            activeOpacity={0.8}
+          >
+            <Send size={18} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </View>
   );
 };
 
@@ -198,22 +202,27 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   messageBubble: {
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 14,
     marginBottom: 14,
-    maxWidth: '90%',
+    maxWidth: '92%',
   },
   userBubble: {
-    backgroundColor: Colors.cardHover,
+    backgroundColor: '#CCFBF1',
     alignSelf: 'flex-end',
     borderWidth: 1,
-    borderColor: Colors.primaryDark,
+    borderColor: '#99F6E4',
   },
   aiBubble: {
-    backgroundColor: Colors.card,
+    backgroundColor: '#FFFFFF',
     alignSelf: 'flex-start',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 1,
   },
   senderHeader: {
     flexDirection: 'row',
@@ -233,7 +242,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: Colors.inputBg,
+    backgroundColor: '#CCFBF1',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 6,
@@ -255,11 +264,13 @@ const styles = StyleSheet.create({
   },
   lawsBox: {
     marginTop: 10,
-    backgroundColor: Colors.inputBg,
-    borderRadius: 8,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
     padding: 10,
     borderLeftWidth: 3,
-    borderLeftColor: Colors.primaryLight,
+    borderLeftColor: Colors.primary,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   lawsHeader: {
     flexDirection: 'row',
@@ -269,23 +280,26 @@ const styles = StyleSheet.create({
   lawsTitle: {
     fontSize: 11,
     fontWeight: '700',
-    color: Colors.primaryLight,
+    color: Colors.primary,
     marginLeft: 6,
   },
   lawItem: {
     fontSize: 12,
     color: Colors.textSecondary,
     marginTop: 2,
+    lineHeight: 16,
   },
   stepsBox: {
     marginTop: 10,
-    backgroundColor: Colors.cardHover,
-    borderRadius: 8,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 10,
     padding: 10,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
   },
   stepsTitle: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.accentGold,
     marginBottom: 6,
   },
@@ -293,15 +307,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textPrimary,
     marginTop: 3,
+    lineHeight: 17,
   },
   loadingBubble: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.card,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 12,
     alignSelf: 'flex-start',
     marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   loadingText: {
     fontSize: 12,
@@ -310,18 +327,20 @@ const styles = StyleSheet.create({
   },
   suggestionsContainer: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingTop: 8,
+    paddingBottom: 4,
+    backgroundColor: Colors.background,
   },
   promptChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.card,
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 8,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#E2E8F0',
   },
   promptChipText: {
     fontSize: 12,
@@ -332,7 +351,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 4,
+    paddingVertical: 6,
+    backgroundColor: Colors.background,
   },
   disclaimerText: {
     fontSize: 10,
@@ -343,14 +363,16 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: Colors.backgroundSecondary,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: '#E2E8F0',
+    marginBottom: Platform.OS === 'ios' ? 70 : 65,
   },
   input: {
     flex: 1,
-    backgroundColor: Colors.inputBg,
+    backgroundColor: '#F8FAFC',
     color: Colors.textPrimary,
     borderRadius: 20,
     paddingHorizontal: 16,
@@ -358,6 +380,8 @@ const styles = StyleSheet.create({
     maxHeight: 80,
     fontSize: 14,
     marginRight: 10,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
   },
   sendButton: {
     width: 44,
@@ -368,6 +392,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: Colors.cardBorder,
+    backgroundColor: '#94A3B8',
   },
 });

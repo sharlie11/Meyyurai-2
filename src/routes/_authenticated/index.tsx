@@ -194,8 +194,7 @@ function EmergencyScreen() {
                 },
                 notes: `Alert sent to contacts: ${contactsList.map((c) => `${c.name} (${c.phone})`).join(", ")}`,
                 status: "active",
-              })
-              .catch(() => {});
+              });
           }
 
           const phoneNumbers = contactsList.map((c) => c.phone).join(",");
@@ -225,15 +224,16 @@ function EmergencyScreen() {
           const smsUrl = `sms:${phoneNumbers}?body=${encodeURIComponent(sosText)}`;
 
           if (u?.user) {
-            await supabase
-              .from("emergency_events")
-              .insert({
-                user_id: u.user.id,
-                emergency_type: "SOS_ALERT",
-                notes: `Alert sent to contacts without GPS: ${contactsList.map((c) => `${c.name} (${c.phone})`).join(", ")}`,
-                status: "active",
-              })
-              .catch(() => {});
+            try {
+              await supabase
+                .from("emergency_events")
+                .insert({
+                  user_id: u.user.id,
+                  emergency_type: "SOS_ALERT",
+                  notes: `Alert sent to contacts without GPS: ${contactsList.map((c) => `${c.name} (${c.phone})`).join(", ")}`,
+                  status: "active",
+                });
+            } catch {}
           }
 
           toast.success(

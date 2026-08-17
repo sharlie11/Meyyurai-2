@@ -59,11 +59,13 @@ function AuthPage() {
             user_metadata: { full_name: name },
           });
           // Log security audit activity to PostgreSQL
-          await supabase.from("activity_logs").insert({
-            user_id: data.user.id,
-            action: "USER_SIGNUP",
-            device_info: { user_agent: navigator.userAgent, platform: navigator.platform },
-          }).catch(() => {});
+          try {
+            await supabase.from("activity_logs").insert({
+              user_id: data.user.id,
+              action: "USER_SIGNUP",
+              device_info: { user_agent: navigator.userAgent, platform: navigator.platform },
+            });
+          } catch {}
           toast.success("Account created successfully!");
           goNext();
           return;
@@ -86,11 +88,13 @@ function AuthPage() {
             user_metadata: { full_name: data.user.user_metadata?.full_name },
           });
           // Log security audit activity to PostgreSQL
-          await supabase.from("activity_logs").insert({
-            user_id: data.user.id,
-            action: "USER_LOGIN",
-            device_info: { user_agent: navigator.userAgent, platform: navigator.platform },
-          }).catch(() => {});
+          try {
+            await supabase.from("activity_logs").insert({
+              user_id: data.user.id,
+              action: "USER_LOGIN",
+              device_info: { user_agent: navigator.userAgent, platform: navigator.platform },
+            });
+          } catch {}
           toast.success("Signed in successfully!");
           goNext();
           return;

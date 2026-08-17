@@ -11,7 +11,7 @@ import { ProfileScreen } from '../screens/ProfileScreen';
 import { AuthScreen } from '../screens/AuthScreen';
 
 import { Colors } from '../theme/colors';
-import { AlertTriangle, Scale, Bot, PhoneCall, User } from 'lucide-react-native';
+import { AlertTriangle, Sparkles, Scale, BookOpen, User } from 'lucide-react-native';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -22,18 +22,28 @@ function MainTabNavigator() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: Colors.backgroundSecondary,
-          borderTopColor: Colors.border,
-          borderTopWidth: 1,
-          height: 60,
+          position: 'absolute',
+          bottom: 12,
+          left: 14,
+          right: 14,
+          backgroundColor: '#FFFFFF',
+          borderRadius: 28,
+          height: 64,
           paddingBottom: 8,
-          paddingTop: 6,
+          paddingTop: 8,
+          borderTopWidth: 0,
+          elevation: 8,
+          shadowColor: '#0F172A',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.12,
+          shadowRadius: 10,
         },
-        tabBarActiveTintColor: Colors.primaryLight,
+        tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
+          fontSize: 10,
+          fontWeight: '700',
+          marginTop: 2,
         },
       }}
     >
@@ -42,7 +52,15 @@ function MainTabNavigator() {
         component={HomeScreen}
         options={{
           tabBarLabel: 'Emergency',
-          tabBarIcon: ({ color, size }) => <AlertTriangle size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <AlertTriangle size={20} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="AI"
+        component={AIScreen}
+        options={{
+          tabBarLabel: 'Meyyurai AI',
+          tabBarIcon: ({ color, size }) => <Sparkles size={20} color={color} />,
         }}
       />
       <Tab.Screen
@@ -50,23 +68,15 @@ function MainTabNavigator() {
         component={RightsScreen}
         options={{
           tabBarLabel: 'Rights',
-          tabBarIcon: ({ color, size }) => <Scale size={size} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="AI"
-        component={AIScreen}
-        options={{
-          tabBarLabel: 'AI Guide',
-          tabBarIcon: ({ color, size }) => <Bot size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <Scale size={20} color={color} />,
         }}
       />
       <Tab.Screen
         name="Resources"
         component={ResourcesScreen}
         options={{
-          tabBarLabel: 'Helplines',
-          tabBarIcon: ({ color, size }) => <PhoneCall size={size} color={color} />,
+          tabBarLabel: 'Resources',
+          tabBarIcon: ({ color, size }) => <BookOpen size={20} color={color} />,
         }}
       />
       <Tab.Screen
@@ -74,7 +84,7 @@ function MainTabNavigator() {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <User size={20} color={color} />,
         }}
       />
     </Tab.Navigator>
@@ -84,7 +94,7 @@ function MainTabNavigator() {
 export function AppNavigator() {
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Main">
+      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Auth">
         <Stack.Screen name="Auth" component={AuthScreen} />
         <Stack.Screen name="Main" component={MainTabNavigator} />
       </Stack.Navigator>

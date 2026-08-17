@@ -82,9 +82,8 @@ function ProfileScreen() {
 
   useEffect(() => {
     (async () => {
-      const activeUser = await getCurrentUser();
       const { data: u } = await supabase.auth.getUser();
-      const currentUser = u?.user || (activeUser ? { id: activeUser.id, email: activeUser.email, user_metadata: activeUser.user_metadata } : null);
+      const currentUser = u?.user ? { id: u.user.id, email: u.user.email, user_metadata: u.user.user_metadata } : null;
 
       if (currentUser) {
         let fullName = currentUser.user_metadata?.full_name;

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../theme/colors';
 import { Shield, Globe } from 'lucide-react-native';
 import { useI18n, LANGUAGES, Lang } from '../lib/i18n';
@@ -26,24 +27,26 @@ export const Header: React.FC<HeaderProps> = ({
   const currentNative = LANGUAGES.find((l) => l.code === lang)?.native || 'English';
 
   return (
-    <View style={styles.container}>
-      <View style={styles.leftRow}>
-        <View style={styles.iconContainer}>
-          <Shield size={24} color={Colors.accentGold} />
+    <SafeAreaView edges={['top']} style={{ backgroundColor: Colors.background }}>
+      <View style={styles.container}>
+        <View style={styles.leftRow}>
+          <View style={styles.iconContainer}>
+            <Shield size={20} color={Colors.primary} />
+          </View>
+          <View>
+            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.subtitle}>{subtitle}</Text>
+          </View>
         </View>
-        <View>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.subtitle}>{subtitle}</Text>
-        </View>
-      </View>
 
-      {showLangPicker && (
-        <TouchableOpacity style={styles.langButton} onPress={cycleLanguage} activeOpacity={0.7}>
-          <Globe size={16} color={Colors.primaryLight} />
-          <Text style={styles.langText}>{currentNative}</Text>
-        </TouchableOpacity>
-      )}
-    </View>
+        {showLangPicker && (
+          <TouchableOpacity style={styles.langButton} onPress={cycleLanguage} activeOpacity={0.7}>
+            <Globe size={14} color={Colors.primary} />
+            <Text style={styles.langText}>{currentNative}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </SafeAreaView>
   );
 };
 
@@ -53,46 +56,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: Colors.backgroundSecondary,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    paddingVertical: 12,
+    backgroundColor: Colors.background,
   },
   leftRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   iconContainer: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     borderRadius: 10,
-    backgroundColor: Colors.card,
+    backgroundColor: '#CCFBF1',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    marginRight: 10,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: Colors.textPrimary,
-    letterSpacing: 0.5,
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.textMuted,
-    marginTop: 2,
   },
   langButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.card,
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: Colors.primaryDark,
+    borderColor: Colors.border,
   },
   langText: {
     fontSize: 12,
@@ -101,3 +98,4 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
 });
+

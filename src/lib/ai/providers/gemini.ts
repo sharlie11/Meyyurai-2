@@ -10,10 +10,25 @@ import {
   RetrievalDocument,
 } from "../provider";
 
-type QueryCategory = "workplace" | "contract" | "cyber" | "women" | "consumer" | "tenant" | "accident" | "general";
+type QueryCategory = "workplace" | "contract" | "cyber" | "women" | "consumer" | "tenant" | "accident" | "property" | "general";
 
 function categorizeUserQuery(query: string): QueryCategory {
   const q = query.toLowerCase();
+  if (
+    q.includes("property") ||
+    q.includes("brother") ||
+    q.includes("sister") ||
+    q.includes("partition") ||
+    q.includes("ancestral") ||
+    q.includes("inheritance") ||
+    q.includes("land") ||
+    q.includes("patta") ||
+    q.includes("chitta") ||
+    q.includes("will") ||
+    q.includes("deed")
+  ) {
+    return "property";
+  }
   if (
     q.includes("manager") ||
     q.includes("workload") ||
@@ -147,7 +162,7 @@ export class GeminiProvider implements AIProvider {
 
   constructor() {
     this.apiKey = process.env.GEMINI_API_KEY || "";
-    this.model = "gemini-2.5-pro";
+    this.model = "gemini-1.5-flash";
     this.embeddingModel = "text-embedding-004";
   }
 
@@ -474,6 +489,35 @@ Output MUST be valid JSON matching this schema:
         ],
         what_this_means:
           "Under Indian law, opening a vehicle door negligently into oncoming traffic causing a collision constitutes rash and negligent behavior under criminal law (BNS Sec 281/125). The injured victim has the absolute statutory right to claim full medical expenses, loss of income, and disability compensation from the vehicle driver and third-party insurance company via the Motor Accident Claims Tribunal (MACT).",
+        confidence_level: "High",
+      };
+    }
+
+    if (category === "property") {
+      return {
+        situation_summary: `Property & Family Partition Analysis: "${userQuery}". You are seeking guidance on property rights, ancestral shares, or family partition disputes under Indian Property Law.`,
+        relevant_laws: [
+          {
+            act_name: "Hindu Succession Act, 1956 (or Applicable Personal Law)",
+            section: "Section 6 & Section 8: Equal Coparcenary & Inheritance Rights of Legal Heirs",
+            official_source: "Ministry of Law & Justice, Govt of India",
+            official_url: "https://www.indiacode.nic.in",
+          },
+          {
+            act_name: "Partition Act, 1893",
+            section: "Section 2: Power of Court to Order Sale & Division in Partition Suits",
+            official_source: "Gazette of India",
+            official_url: "https://e-gazette.gov.in",
+          },
+          {
+            act_name: "Code of Civil Procedure, 1908",
+            section: "Order 39 Rules 1 & 2: Temporary Injunction & Stay Orders to Protect Property",
+            official_source: "Ministry of Law & Justice, Govt of India",
+            official_url: "https://www.indiacode.nic.in",
+          },
+        ],
+        what_this_means:
+          "Under Indian Succession Laws, ancestral and joint family property cannot be unilaterally grabbed, sold, or altered by any single co-heir without a formal Deed of Partition or written consent. You have equal statutory rights to claim your share via a Civil Partition Suit and obtain a Court Stay Order against unauthorized sale or construction.",
         confidence_level: "High",
       };
     }

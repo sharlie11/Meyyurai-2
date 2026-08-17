@@ -1,6 +1,9 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
 export type Lang = "en" | "ta" | "hi" | "te" | "kn" | "ml";
+
+
+
 
 export const LANGUAGES: { code: Lang; label: string; native: string }[] = [
   { code: "en", label: "English", native: "English" },

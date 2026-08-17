@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Colors } from '../theme/colors';
 import { Header } from '../components/Header';
@@ -20,28 +21,158 @@ import {
   LogOut,
   CheckCircle,
   KeyRound,
+  RefreshCw,
 } from 'lucide-react-native';
 import { useI18n, LANGUAGES, Lang } from '../lib/i18n';
 import { supabase } from '../lib/supabase';
 
+export interface EmergencyContact {
+  id: string;
+  name: string;
+  phone: string;
+  relationship?: string;
+  is_primary?: boolean;
+}
+
 export const ProfileScreen = ({ navigation }: any) => {
   const { lang, setLang, t } = useI18n();
-  const [contacts, setContacts] = useState<string[]>([
-    '+91 98765 43210 (Parent / Guardian)',
-    '+91 91234 56789 (Emergency Contact)',
-  ]);
-  const [newContact, setNewContact] = useState('');
-  const [safetyPin, setSafetyPin] = useState('1234');
+  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
+  const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const addContact = () => {
-    if (!newContact.trim()) return;
-    setContacts([...contacts, newContact.trim()]);
-    setNewContact('');
-    Alert.alert('Contact Added', 'Emergency contact successfully saved.');
+  useEffect(() => {
+    fetchEmergencyContacts();
+  }, []);
+
+  const fetchEmergencyContacts = async () => {
+    setLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const user = sessionData?.session?.user;
+
+      if (!user || !token) {
+        setContacts([]);
+        return;
+      }
+
+      // Hit REST API /api/contacts (triggers select_emergency_contacts RPC with pgcrypto decryption)
+      const backendHost = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api/contacts';
+      const contactsEndpoint = backendHost.includes('/api/')
+        ? backendHost.replace(/\/api\/(ai\/chat|sos)\/?$/, '/api/contacts')
+        : 'http://localhost:8080/api/contacts';
+
+      const res = await fetch(contactsEndpoint, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const list: EmergencyContact[] = (data.emergency_contacts || []).map((c: any) => ({
+          id: c.id,
+          name: c.name || 'Emergency Contact',
+          phone: c.phone || '',
+          relationship: c.relationship,
+          is_primary: c.is_primary,
+        }));
+        setContacts(list);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        console.warn('Failed to load contacts:', errData.error);
+      }
+    } catch (err) {
+      console.warn('Error fetching emergency contacts:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const removeContact = (index: number) => {
-    setContacts(contacts.filter((_, i) => i !== index));
+  const addContact = async () => {
+    if (!contactPhone.trim()) {
+      Alert.alert('Missing Number', 'Please enter a phone number (+91...)');
+      return;
+    }
+
+    const name = contactName.trim() || 'Emergency Contact';
+    const phone = contactPhone.trim();
+
+    setSubmitting(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      if (!token) {
+        Alert.alert('Authentication Error', 'Please sign in to save emergency contacts.');
+        return;
+      }
+
+      // Hit REST API POST /api/contacts (triggers insert_emergency_contact RPC with pgcrypto encryption)
+      const backendHost = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api/contacts';
+      const contactsEndpoint = backendHost.includes('/api/')
+        ? backendHost.replace(/\/api\/(ai\/chat|sos)\/?$/, '/api/contacts')
+        : 'http://localhost:8080/api/contacts';
+
+      const res = await fetch(contactsEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          type: 'emergency',
+          name,
+          phone,
+          relationship: 'Family/Friend',
+          priority_order: contacts.length + 1,
+          is_primary: contacts.length === 0,
+        }),
+      });
+
+      if (res.ok || res.status === 210) {
+        setContactName('');
+        setContactPhone('');
+        Alert.alert('Contact Added', 'Emergency contact successfully saved with pgcrypto encryption.');
+        fetchEmergencyContacts();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        Alert.alert('Save Error', errData.error || 'Failed to save emergency contact.');
+      }
+    } catch (err: any) {
+      Alert.alert('Save Error', err.message || 'Failed to save emergency contact.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const removeContact = async (id: string) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      if (!token) return;
+
+      // Hit REST API DELETE /api/contacts/:id
+      const backendHost = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api/contacts';
+      const deleteEndpoint = `${backendHost.replace(/\/api\/(ai\/chat|sos)\/?$/, '/api/contacts')}/${id}`;
+
+      const res = await fetch(deleteEndpoint, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        setContacts((prev) => prev.filter((c) => c.id !== id));
+        Alert.alert('Contact Removed', 'Emergency contact deleted.');
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        Alert.alert('Delete Error', errData.error || 'Failed to delete contact.');
+      }
+    } catch (err: any) {
+      Alert.alert('Delete Error', err.message || 'Failed to delete contact.');
+    }
   };
 
   const handleLogout = async () => {
@@ -61,7 +192,7 @@ export const ProfileScreen = ({ navigation }: any) => {
           </View>
           <View style={{ flex: 1, marginLeft: 14 }}>
             <Text style={styles.userName}>Meyyurai Protected User</Text>
-            <Text style={styles.userSub}>Verified Profile • Active Emergency Safety PIN</Text>
+            <Text style={styles.userSub}>Verified Profile • Encrypted Contact Storage Active</Text>
           </View>
         </View>
 
@@ -84,30 +215,65 @@ export const ProfileScreen = ({ navigation }: any) => {
         </View>
 
         {/* EMERGENCY CONTACTS */}
-        <Text style={styles.sectionHeader}>{t('profile.section.contacts')}</Text>
-        <View style={styles.card}>
-          {contacts.map((c, idx) => (
-            <View key={idx} style={styles.contactRow}>
-              <Phone size={16} color={Colors.primaryLight} />
-              <Text style={styles.contactText}>{c}</Text>
-              <TouchableOpacity onPress={() => removeContact(idx)}>
-                <Trash2 size={16} color={Colors.sosRed} />
-              </TouchableOpacity>
-            </View>
-          ))}
+        <View style={styles.contactHeaderRow}>
+          <Text style={styles.sectionHeader}>{t('profile.section.contacts')}</Text>
+          <TouchableOpacity onPress={fetchEmergencyContacts} disabled={loading}>
+            <RefreshCw size={14} color={Colors.primary} />
+          </TouchableOpacity>
+        </View>
 
-          <View style={styles.addContactRow}>
+        <View style={styles.card}>
+          {loading ? (
+            <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 12 }} />
+          ) : contacts.length === 0 ? (
+            <Text style={{ color: Colors.textMuted, fontSize: 12, marginBottom: 10, fontStyle: 'italic' }}>
+              No emergency contacts added yet. Enter contact details below to link with SOS dispatch.
+            </Text>
+          ) : (
+            contacts.map((c) => (
+              <View key={c.id} style={styles.contactRow}>
+                <Phone size={16} color={Colors.primaryLight} />
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={styles.contactName}>{c.name}</Text>
+                  <Text style={styles.contactText}>{c.phone}</Text>
+                </View>
+                <TouchableOpacity onPress={() => removeContact(c.id)}>
+                  <Trash2 size={16} color={Colors.sosRed} />
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
+
+          <Text style={styles.addSectionTitle}>ADD NEW EMERGENCY CONTACT</Text>
+          <View style={styles.addInputsColumn}>
             <TextInput
               style={styles.addInput}
-              placeholder="Enter phone number (+91...)"
+              placeholder="Contact Name (e.g. Father, Sister)"
               placeholderTextColor={Colors.textDim}
-              value={newContact}
-              onChangeText={setNewContact}
-              keyboardType="phone-pad"
+              value={contactName}
+              onChangeText={setContactName}
             />
-            <TouchableOpacity style={styles.addButton} onPress={addContact}>
-              <Plus size={18} color="#FFFFFF" />
-            </TouchableOpacity>
+            <View style={styles.addContactRow}>
+              <TextInput
+                style={[styles.addInput, { flex: 1, marginRight: 8 }]}
+                placeholder="Phone (+91 9876543210)"
+                placeholderTextColor={Colors.textDim}
+                value={contactPhone}
+                onChangeText={setContactPhone}
+                keyboardType="phone-pad"
+              />
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={addContact}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Plus size={18} color="#FFFFFF" />
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -141,7 +307,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 40,
+    paddingBottom: 90,
   },
   userCard: {
     flexDirection: 'row',
@@ -180,6 +346,11 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
     marginBottom: 10,
     marginTop: 10,
+  },
+  contactHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   langGrid: {
     flexDirection: 'row',
@@ -230,26 +401,38 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.inputBg,
   },
-  contactText: {
-    flex: 1,
+  contactName: {
     fontSize: 13,
+    fontWeight: '700',
     color: Colors.textPrimary,
-    marginLeft: 10,
   },
-  addContactRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
+  contactText: {
+    fontSize: 12,
+    color: Colors.textMuted,
+  },
+  addSectionTitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: Colors.textMuted,
+    letterSpacing: 1,
+    marginTop: 14,
+    marginBottom: 8,
+  },
+  addInputsColumn: {
+    width: '100%',
   },
   addInput: {
-    flex: 1,
     backgroundColor: Colors.inputBg,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     color: Colors.textPrimary,
     fontSize: 13,
-    marginRight: 8,
+    marginBottom: 8,
+  },
+  addContactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   addButton: {
     width: 38,

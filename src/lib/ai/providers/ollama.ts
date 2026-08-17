@@ -62,6 +62,13 @@ function categorizeUserQuery(query: string): QueryCategory {
     q.includes("money stolen") ||
     q.includes("online") ||
     q.includes("bank") ||
+    q.includes("atm") ||
+    q.includes("card") ||
+    q.includes("debit") ||
+    q.includes("credit") ||
+    q.includes("passbook") ||
+    q.includes("lost card") ||
+    q.includes("missed card") ||
     q.includes("scam") ||
     q.includes("phishing")
   ) {
@@ -414,10 +421,6 @@ Output MUST be valid JSON matching this schema:
   ): Promise<ExplanationGeneratorResponse> {
 
     const category = categorizeUserQuery(userQuery);
-
-    if (retrievedDocuments.length === 0) {
-      return this.getFallbackExplanation(category, userQuery);
-    }
 
     const systemInstruction = `You are Meyyurai's Explanation Generator.
 Explain the retrieved official legal documents in simple language.

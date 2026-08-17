@@ -3,23 +3,23 @@
     "name": "Meyyurai",
     "slug": "meyyurai-mobile",
     "version": "1.0.0",
-    "sdkVersion": "54.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#091E1C"
+      "backgroundColor": "#F8FAFC"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.meyyurai.app"
     },
     "android": {
+      "softwareKeyboardLayoutMode": "adjustResize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#091E1C"
+        "backgroundColor": "#F8FAFC"
       },
       "package": "com.meyyurai.app",
       "permissions": [

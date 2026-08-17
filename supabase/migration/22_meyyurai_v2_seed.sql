@@ -1,25 +1,4 @@
--- Meyyurai v2 Seed Data
--- Run this AFTER 22_meyyurai_v2_schema.sql to populate the database with initial categories, laws, and emergency contacts.
-
--- 1. Insert Law Categories
-INSERT INTO public.law_categories (id, name, description) VALUES
-  ('c1000000-0000-0000-0000-000000000001', 'Criminal Law', 'Laws dealing with crimes and their punishment.'),
-  ('c2000000-0000-0000-0000-000000000002', 'Women''s Rights', 'Laws specifically protecting the rights and safety of women.'),
-  ('c3000000-0000-0000-0000-000000000003', 'Civil Law', 'Laws dealing with disputes between individuals and organizations.'),
-  ('c4000000-0000-0000-0000-000000000004', 'Cyber Law', 'Laws dealing with internet, computers, and digital crimes.'),
-  ('c5000000-0000-0000-0000-000000000005', 'Labor & Employment', 'Laws regarding worker rights, conditions, and wages.')
-ON CONFLICT (name) DO NOTHING;
-
--- 2. Insert Laws
-INSERT INTO public.laws (id, category_id, title, act_name, act_number, year, description, source, official_url, ministry, language, status) VALUES
-  (
-    'l1000000-0000-0000-0000-000000000001',
-    'c1000000-0000-0000-0000-000000000001',
-    'Bharatiya Nyaya Sanhita, 2023',
-    'BNS',
-    '45',
-    2023,
-    'The primary criminal code of India, replacing the Indian Penal Code (IPC).',
+aqq  'The primary criminal code of India, replacing the Indian Penal Code (IPC).',
     'India Code',
     'https://www.indiacode.nic.in/handle/123456789/1362',
     'Ministry of Home Affairs',

@@ -20,6 +20,7 @@ import {
   ActionPlanGeneratorResponse,
 } from "@/lib/ai/provider";
 import { fetchAndIngestIndiaCodeAct, resolveActTitleToHandle } from "@/lib/ingestion/indiacode-fetcher";
+import { sendEmergencySmsMsg91 } from "@/lib/sms";
 import type { Json } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/api/$")({
@@ -487,17 +488,39 @@ async function handleSosRoutes(
         p_key: key,
       });
 
-      // Simulate alert transmission (SMS/Email/Push)
-      const dispatchAlerts = (contacts || []).map((c: { name: string; phone: string | null }) => ({
-        contact_name: c.name,
-        phone_notified: c.phone,
-        status: "dispatched",
-      }));
+      const mapLink =
+        latitude && longitude
+          ? `https://maps.google.com/?q=${latitude},${longitude}`
+          : "Location unavailable";
 
-      // Trigger automatic follow up check (notification) in 10 mins
+      // Dispatch alert transmission with real Gateway check, 1-retry backoff, & phone masking
+      const dispatchAlerts = await Promise.all(
+        (contacts || []).map(async (c: { name: string; phone: string | null }) => {
+          return await sendEmergencySmsMsg91({
+            phone: c.phone || "",
+            contactName: c.name,
+            mapLink,
+            emergencyType: emergency_type || "SOS",
+            emergencyId: event.id,
+          });
+        })
+      );
+
+      // Check if any SMS dispatch failed to trigger emergency notification fallback
+      const failedCount = dispatchAlerts.filter((a) => a.status !== "dispatched").length;
+
+      if (failedCount > 0) {
+        await serviceClient.from("notifications").insert({
+          user_id: userId!,
+          message: `⚠️ WARNING: SMS alert failed to deliver for ${failedCount} contact(s). Please call 112 directly if in immediate danger.`,
+          type: "emergency",
+        });
+      }
+
+      // Trigger primary safety confirmation notification
       await serviceClient.from("notifications").insert({
         user_id: userId!,
-        message: `Meyyurai Emergency SOS activated ID: ${event.id.slice(0, 8)}. Please confirm your safety if you can.`,
+        message: `Meyyurai Emergency SOS activated (ID: ${event.id.slice(0, 8)}). Please confirm your safety if you can.`,
         type: "emergency",
       });
 
@@ -505,12 +528,20 @@ async function handleSosRoutes(
         userId,
         action: "SOS_ACTIVATED",
         request,
-        deviceInfo: { event_id: event.id },
+        deviceInfo: {
+          event_id: event.id,
+          total_contacts: dispatchAlerts.length,
+          successful_dispatches: dispatchAlerts.length - failedCount,
+          failed_dispatches: failedCount,
+        },
       });
 
       return createResponse(
         {
-          message: "SOS event recorded. Emergency contacts notified.",
+          message:
+            failedCount > 0
+              ? "SOS event recorded. Some contact SMS alerts failed to dispatch — please dial 112 directly."
+              : "SOS event recorded. Emergency contacts notified.",
           emergency_id: event.id,
           alerts: dispatchAlerts,
         },
@@ -606,6 +637,11 @@ async function handleTrackingRoutes(
   return createResponse({ error: "Not Found" }, 404);
 }
 
+function isValidUuid(id: string | null): boolean {
+  if (!id) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
+
 /**
  * 7. AI Guidance Router (RAG Legal Assistant)
  */
@@ -614,6 +650,7 @@ async function handleAiRoutes(request: Request, action: string, method: string):
   if (error) return error;
 
   const serviceClient = supabaseClient!;
+  const dbUserId = isValidUuid(userId) ? userId : null;
 
   if (action === "chat" && method === "POST") {
     const body = await request.json().catch(() => ({}));
@@ -630,12 +667,17 @@ async function handleAiRoutes(request: Request, action: string, method: string):
         .from("ai_sessions")
         .select("id, internal_case_summary")
         .eq("id", sessionId)
-        .single();
+        .maybeSingle();
 
       if (!sessionData) {
-        await serviceClient
-          .from("ai_sessions")
-          .insert({ id: sessionId, user_id: userId, title: question.slice(0, 50) });
+        const sessionPayload: any = {
+          id: sessionId,
+          title: question.slice(0, 50),
+        };
+        if (dbUserId) {
+          sessionPayload.user_id = dbUserId;
+        }
+        await serviceClient.from("ai_sessions").insert(sessionPayload);
       }
 
       // Save user message
@@ -860,10 +902,13 @@ async function handleAiRoutes(request: Request, action: string, method: string):
   }
 
   if (action === "history" && method === "GET") {
+    if (!dbUserId) {
+      return createResponse({ sessions: [] });
+    }
     const { data, error: dbError } = await serviceClient
       .from("ai_sessions")
       .select("*, ai_messages(*)")
-      .eq("user_id", userId!)
+      .eq("user_id", dbUserId)
       .order("created_at", { ascending: false });
 
     if (dbError) return createResponse({ error: dbError.message }, 400);
@@ -871,6 +916,145 @@ async function handleAiRoutes(request: Request, action: string, method: string):
   }
 
   return createResponse({ error: "Not Found" }, 404);
+}
+
+/**
+ * Normalizes audio MIME types for Gemini 1.5 Flash multimodal API
+ */
+function normalizeAudioMime(mimeType: string, fileName: string): string {
+  const clean = (mimeType || "").toLowerCase().trim();
+  const ext = (fileName || "").toLowerCase();
+
+  if (clean.includes("mp3") || clean.includes("mpeg") || ext.endsWith(".mp3")) return "audio/mp3";
+  if (clean.includes("m4a") || clean.includes("x-m4a") || ext.endsWith(".m4a")) return "audio/m4a";
+  if (clean.includes("wav") || clean.includes("x-wav") || ext.endsWith(".wav")) return "audio/wav";
+  if (clean.includes("aac") || ext.endsWith(".aac")) return "audio/aac";
+  if (clean.includes("ogg") || clean.includes("opus") || ext.endsWith(".ogg")) return "audio/ogg";
+  if (clean.includes("flac") || ext.endsWith(".flac")) return "audio/flac";
+  if (clean.includes("mp4") || ext.endsWith(".mp4")) return "audio/mp4";
+  return "audio/mp3";
+}
+
+/**
+ * Gemini Multimodal Audio Transcriber helper
+ * Detects spoken language (ISO 639-1 code) alongside transcript with a 15-second AbortController timeout
+ */
+async function performGeminiAudioTranscription(
+  audioBuffer: Buffer | null,
+  mimeType: string,
+  fileName: string,
+  userPrefLang?: string,
+): Promise<{ transcript: string; language: string }> {
+  const defaultResult = {
+    transcript: "Transcription unavailable for this recording.",
+    language: userPrefLang || "en",
+  };
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || !audioBuffer) {
+    return {
+      transcript: "Transcription unavailable: GEMINI_API_KEY not configured.",
+      language: userPrefLang || "en",
+    };
+  }
+
+  const validMime = normalizeAudioMime(mimeType, fileName);
+
+  // 15-second AbortController timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const base64Data = audioBuffer.toString("base64");
+    const prompt = `You are Meyyurai Speech Transcriber. Transcribe this audio recording into plain text accurately.
+Identify the primary spoken ISO 639-1 language code (e.g., "ta" for Tamil, "hi" for Hindi, "te" for Telugu, "kn" for Kannada, "ml" for Malayalam, "en" for English, "mr" for Marathi, "bn" for Bengali, "gu" for Gujarati, "pa" for Punjabi).
+Return ONLY a valid JSON object formatted as:
+{
+  "transcript": "<accurate transcript text>",
+  "language": "<2-letter ISO language code>"
+}`;
+
+    const modelName = process.env.GEMINI_MODEL_NAME || "gemini-3.1-flash-lite";
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt },
+                {
+                  inline_data: {
+                    mime_type: validMime,
+                    data: base64Data,
+                  },
+                },
+              ],
+            },
+          ],
+        }),
+      },
+    );
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      console.warn(`Gemini Audio Transcription API status ${response.status}.`);
+      return defaultResult;
+    }
+
+    const data = (await response.json()) as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[];
+    };
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+    // Robust Markdown fence stripping & JSON extraction
+    let cleanText = responseText.trim();
+    cleanText = cleanText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+
+    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+    const jsonString = jsonMatch ? jsonMatch[0] : cleanText;
+
+    try {
+      const parsed = JSON.parse(jsonString);
+      if (parsed.transcript) {
+        return {
+          transcript: String(parsed.transcript).trim(),
+          language: String(parsed.language || userPrefLang || "en").toLowerCase().trim(),
+        };
+      }
+    } catch (parseErr) {
+      console.warn(
+        "Gemini audio transcription JSON parse failed. Raw response was:\n",
+        responseText,
+        parseErr
+      );
+      if (cleanText) {
+        return {
+          transcript: cleanText,
+          language: userPrefLang || "en",
+        };
+      }
+    }
+
+    return {
+      transcript: "No speech extracted from audio file.",
+      language: userPrefLang || "en",
+    };
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err.name === "AbortError") {
+      console.warn("Gemini Audio Transcription timed out (15s limit).");
+      return {
+        transcript: "Transcription timed out (15s limit).",
+        language: userPrefLang || "en",
+      };
+    }
+    console.error("Gemini Audio Transcription Exception:", err);
+    return defaultResult;
+  }
 }
 
 /**
@@ -887,25 +1071,46 @@ async function handleVoiceRoutes(
   const serviceClient = supabaseClient!;
 
   if (action === "upload" && method === "POST") {
-    // Supports file upload payload or JSON metadata url
     const contentType = request.headers.get("content-type") || "";
     let audioUrl = "";
     let durationSeconds = 10;
     let originalName = "voice_note.mp3";
+    let mimeType = "audio/mp3";
+    let audioBuffer: Buffer | null = null;
+    let malwareCheck: "CLEAN" | "INFECTED" | "SCAN_FAILED" = "CLEAN";
+    let userPrefLang = "en";
 
     if (contentType.includes("multipart/form-data")) {
-      const formData = await request.formData();
-      const file = formData.get("file") as File;
-      if (!file) return createResponse({ error: "File binary is required in form-data" }, 400);
+      const formData = await request.formData().catch(() => null);
+      if (!formData) return createResponse({ error: "Invalid form-data payload" }, 400);
+
+      const file = formData.get("file") as File | null;
+      if (!file) return createResponse({ error: "File binary is required in form-data field 'file'" }, 400);
+
       originalName = file.name;
+      mimeType = file.type || "audio/mp3";
+      userPrefLang = (formData.get("language") as string) || "en";
+      audioBuffer = Buffer.from(await file.arrayBuffer());
+
+      // 1. Execute Malware Scan on Audio Binary
+      malwareCheck = await scanFileMalware(audioBuffer);
+      if (malwareCheck === "INFECTED") {
+        return createResponse({ error: "Security Warning: Voice note rejected. File contains malware." }, 400);
+      }
+      if (malwareCheck === "SCAN_FAILED") {
+        return createResponse(
+          { error: "Security Warning: Malware inspection service unreachable. Upload blocked for security." },
+          503
+        );
+      }
 
       // Upload file to Supabase voice_notes bucket
       const filePath = `${userId}/${Date.now()}_${originalName}`;
-      const { data: uploadData, error: uploadError } = await serviceClient.storage
+      const { error: uploadError } = await serviceClient.storage
         .from("voice_notes")
-        .upload(filePath, file, { contentType: file.type });
+        .upload(filePath, audioBuffer, { contentType: mimeType });
 
-      if (uploadError) return createResponse({ error: uploadError.message }, 400);
+      if (uploadError) return createResponse({ error: uploadError.message }, 500);
 
       const { data: urlData } = serviceClient.storage.from("voice_notes").getPublicUrl(filePath);
       audioUrl = urlData.publicUrl;
@@ -913,11 +1118,42 @@ async function handleVoiceRoutes(
       const body = await request.json().catch(() => ({}));
       audioUrl = body.audio_url;
       durationSeconds = body.duration_seconds || 10;
+      originalName = body.file_name || "voice_note.mp3";
+      mimeType = body.file_type || "audio/mp3";
+      userPrefLang = body.language || "en";
       if (!audioUrl) return createResponse({ error: "audio_url is required" }, 400);
+
+      // Scan external audio URL binary payload
+      try {
+        const extRes = await fetch(audioUrl);
+        if (extRes.ok) {
+          audioBuffer = Buffer.from(await extRes.arrayBuffer());
+          malwareCheck = await scanFileMalware(audioBuffer);
+        } else {
+          malwareCheck = "SCAN_FAILED";
+        }
+      } catch {
+        malwareCheck = "SCAN_FAILED";
+      }
+
+      if (malwareCheck === "INFECTED") {
+        return createResponse({ error: "Security Warning: External voice note rejected. Malware detected." }, 400);
+      }
+      if (malwareCheck === "SCAN_FAILED") {
+        return createResponse(
+          { error: "Security Warning: External voice note malware inspection unreachable. Upload blocked." },
+          503
+        );
+      }
     }
 
-    // Simulate Speech-to-Text translation
-    const transcript = `Simulated transcript for voice recording ${originalName}: Help needed. Situation logged at Meyyurai dashboard.`;
+    // 2. Real Gemini Multimodal Speech-to-Text Transcription with Language Detection
+    const { transcript, language: detectedLanguage } = await performGeminiAudioTranscription(
+      audioBuffer,
+      mimeType,
+      originalName,
+      userPrefLang
+    );
 
     const { data: note, error: dbError } = await serviceClient
       .from("voice_notes")
@@ -925,7 +1161,7 @@ async function handleVoiceRoutes(
         user_id: userId!,
         audio_url: audioUrl,
         transcript,
-        language: "en",
+        language: detectedLanguage,
         duration_seconds: durationSeconds,
       })
       .select()
@@ -952,6 +1188,106 @@ async function handleVoiceRoutes(
 }
 
 /**
+ * Malware scanner helper connecting to ClamAV daemon
+ * Returns SCAN_FAILED if scanner is unreachable (never returns CLEAN on error)
+ */
+async function scanFileMalware(fileBuffer: Buffer | null): Promise<"CLEAN" | "INFECTED" | "SCAN_FAILED"> {
+  if (!fileBuffer) return "CLEAN";
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+    const res = await fetch("http://localhost:8080/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/octet-stream" },
+      body: fileBuffer,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) return "SCAN_FAILED";
+    const data = (await res.json().catch(() => ({}))) as { isInfected?: boolean };
+    return data.isInfected ? "INFECTED" : "CLEAN";
+  } catch (err) {
+    // Scanner unreachable or timed out -> SCAN_FAILED (blocking)
+    return "SCAN_FAILED";
+  }
+}
+
+/**
+ * Gemini Multimodal OCR helper for image evidence analysis
+ */
+async function performGeminiMultimodalOcr(
+  fileBuffer: Buffer | null,
+  mimeType: string,
+  fileName: string,
+): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || !fileBuffer) {
+    return `OCR unavailable for ${fileName}: GEMINI_API_KEY not configured.`;
+  }
+
+  // Determine image MIME type supported by Gemini
+  const isImage = mimeType.startsWith("image/");
+  const validMime = isImage
+    ? mimeType
+    : fileName.endsWith(".png")
+    ? "image/png"
+    : fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")
+    ? "image/jpeg"
+    : null;
+
+  if (!validMime) {
+    return `Document ${fileName} stored. (OCR supported on image formats).`;
+  }
+
+  try {
+    const base64Data = fileBuffer.toString("base64");
+    const modelName = process.env.GEMINI_MODEL_NAME || "gemini-3.1-flash-lite";
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: "You are Meyyurai Evidence OCR & Document Analyzer. Extract all text, statutory references, dates, amounts, names, and key legal evidence facts from this document image concisely.",
+                },
+                {
+                  inline_data: {
+                    mime_type: validMime,
+                    data: base64Data,
+                  },
+                },
+              ],
+            },
+          ],
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      console.warn(`Gemini OCR API status ${response.status}. OCR text extraction unavailable.`);
+      return `OCR service unavailable for image ${fileName}.`;
+    }
+
+    const data = (await response.json()) as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[];
+    };
+    const extractedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    return extractedText
+      ? extractedText.trim()
+      : `No readable text extracted from document image ${fileName}.`;
+  } catch (err) {
+    console.error("Gemini OCR Exception:", err);
+    return `OCR processing error for image ${fileName}.`;
+  }
+}
+
+/**
  * 9. Image and Document Uploads Router
  */
 async function handleUploadsRoutes(
@@ -971,6 +1307,7 @@ async function handleUploadsRoutes(
     let fileType = "";
     let fileSize = 0;
     let fileUrl = "";
+    let malwareCheck: "CLEAN" | "INFECTED" | "SCAN_FAILED" = "CLEAN";
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await request.formData().catch(() => null);
@@ -983,8 +1320,21 @@ async function handleUploadsRoutes(
       fileName = file.name;
       fileType = file.type || "application/octet-stream";
       fileSize = file.size;
+      fileBuffer = Buffer.from(await file.arrayBuffer());
 
-      // Determine appropriate bucket
+      // 1. Execute Malware Scan on Multipart Binary
+      malwareCheck = await scanFileMalware(fileBuffer);
+      if (malwareCheck === "INFECTED") {
+        return createResponse({ error: "Security Warning: Upload rejected. File contains malware." }, 400);
+      }
+      if (malwareCheck === "SCAN_FAILED") {
+        return createResponse(
+          { error: "Security Warning: Malware inspection service unreachable. Upload blocked for security." },
+          503
+        );
+      }
+
+      // Determine appropriate storage bucket
       let bucket = "documents";
       if (fileType.startsWith("image/")) bucket = "images";
       else if (fileName.endsWith(".pdf") || fileName.endsWith(".docx")) bucket = "documents";
@@ -993,7 +1343,7 @@ async function handleUploadsRoutes(
       filePath = `${userId}/${Date.now()}_${fileName}`;
       const { error: uploadError } = await serviceClient.storage
         .from(bucket)
-        .upload(filePath, file, { contentType: fileType });
+        .upload(filePath, fileBuffer, { contentType: fileType });
 
       if (uploadError) return createResponse({ error: uploadError.message }, 500);
 
@@ -1008,11 +1358,37 @@ async function handleUploadsRoutes(
       if (!fileName || !fileUrl)
         return createResponse({ error: "file_name and file_url are required" }, 400);
       filePath = fileUrl;
+
+      // Scan external file_url binary payload
+      try {
+        const extRes = await fetch(fileUrl);
+        if (extRes.ok) {
+          fileBuffer = Buffer.from(await extRes.arrayBuffer());
+          malwareCheck = await scanFileMalware(fileBuffer);
+        } else {
+          malwareCheck = "SCAN_FAILED";
+        }
+      } catch {
+        malwareCheck = "SCAN_FAILED";
+      }
+
+      if (malwareCheck === "INFECTED") {
+        return createResponse({ error: "Security Warning: External file rejected. Malware detected." }, 400);
+      }
+      if (malwareCheck === "SCAN_FAILED") {
+        return createResponse(
+          { error: "Security Warning: External file malware inspection unreachable. Upload blocked." },
+          503
+        );
+      }
     }
 
+    // 2. Execute Real Gemini Multimodal OCR for Evidence Analysis
+    const ocrSummary = await performGeminiMultimodalOcr(fileBuffer, fileType, fileName);
+
     const analysisResult = {
-      malware_check: "CLEAN",
-      ocr_summary: `Scanned file ${fileName}. Verified clean.`,
+      malware_check: malwareCheck,
+      ocr_summary: ocrSummary,
     };
 
     const { data: record, error: dbErr } = await serviceClient
