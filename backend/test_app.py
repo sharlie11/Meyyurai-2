@@ -20,9 +20,23 @@ def client():
     app.config["TESTING"] = True
     app.config["SECRET_KEY"] = "test_meyyurai_secure_secret_key"
     sms_service.clear_test_captured_otps()
+    sms_service.clear_test_captured_broadcasts()
+
+    # Clean up test user records and contacts before each test run
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM emergency_contacts WHERE user_id IN (SELECT id FROM users WHERE phone LIKE '98765432%')")
+    cursor.execute("DELETE FROM emergency_sos_logs WHERE user_id IN (SELECT id FROM users WHERE phone LIKE '98765432%')")
+    cursor.execute("DELETE FROM users WHERE phone LIKE '98765432%'")
+    cursor.execute("DELETE FROM otp_codes WHERE phone LIKE '98765432%'")
+    conn.commit()
+    conn.close()
+
     with app.test_client() as client:
         yield client
+
     sms_service.clear_test_captured_otps()
+    sms_service.clear_test_captured_broadcasts()
 
 
 def test_home_page(client):
