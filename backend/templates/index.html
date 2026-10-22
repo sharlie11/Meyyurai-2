@@ -2814,6 +2814,7 @@ Please call 112 / Police and reach me immediately.
 
       const payload = {
         name: document.getElementById("profName").value.trim(),
+        phone: document.getElementById("profPhone").value.trim(),
         email: document.getElementById("profEmail").value.trim(),
         city: document.getElementById("profCity").value.trim(),
         state: document.getElementById("profState").value.trim(),
@@ -2868,15 +2869,23 @@ Please call 112 / Police and reach me immediately.
       }
 
       try {
+        const payload = {
+          name,
+          phone,
+          relationship,
+          is_primary,
+          user_phone: currentUser ? currentUser.phone : ""
+        };
+
         const res = await fetch("/api/emergency-contacts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, phone, relationship, is_primary })
+          body: JSON.stringify(payload)
         });
         const data = await res.json();
 
         if (data.status === "success") {
-          emergencyContacts = data.contacts;
+          emergencyContacts = data.contacts || data.all_contacts || [];
           closeAddContactModal();
           updateUserUi();
           showToast("Emergency contact saved successfully");
@@ -2895,13 +2904,14 @@ Please call 112 / Police and reach me immediately.
     async function deleteContact(contactId) {
       if (!confirm("Are you sure you want to remove this emergency contact?")) return;
 
+      const userPhone = currentUser ? `?phone=${currentUser.phone}` : "";
       try {
-        const res = await fetch(`/api/emergency-contacts/${contactId}`, {
+        const res = await fetch(`/api/emergency-contacts/${contactId}${userPhone}`, {
           method: "DELETE"
         });
         const data = await res.json();
         if (data.status === "success") {
-          emergencyContacts = data.contacts;
+          emergencyContacts = data.contacts || [];
           updateUserUi();
           showToast("Emergency contact removed");
         }
@@ -3184,7 +3194,7 @@ Please call 112 / Police and reach me immediately.`;
       try {
         const res = await fetch("/api/rights");
         const data = await res.json();
-        cachedRightsData = data.categories || [];
+        cachedRightsData = Array.isArray(data) ? data : (data.categories || []);
         renderResourceCards();
       } catch (err) {
         console.error("Error loading resources:", err);

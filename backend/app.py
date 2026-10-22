@@ -288,6 +288,7 @@ def get_current_user():
         if not user_id:
             # Return unauthenticated guest state
             return jsonify({
+                "status": "unauthenticated",
                 "authenticated": False,
                 "user": None,
                 "emergency_contacts": []
@@ -296,10 +297,11 @@ def get_current_user():
         user = db.get_user_by_id(user_id)
         if not user:
             session.clear()
-            return jsonify({"authenticated": False, "user": None, "emergency_contacts": []})
+            return jsonify({"status": "unauthenticated", "authenticated": False, "user": None, "emergency_contacts": []})
 
         contacts = db.get_emergency_contacts(user_id)
         return jsonify({
+            "status": "authenticated",
             "authenticated": True,
             "user": user,
             "emergency_contacts": contacts
@@ -355,7 +357,8 @@ def handle_emergency_contacts():
     try:
         user_id = session.get("user_id")
         if not user_id:
-            phone = request.args.get("phone") or (request.get_json() or {}).get("phone")
+            body = request.get_json(silent=True) or {}
+            phone = request.args.get("phone") or body.get("user_phone") or body.get("phone")
             if phone:
                 user = db.get_user_by_phone(phone)
                 if user:
@@ -385,6 +388,7 @@ def handle_emergency_contacts():
             "status": "success",
             "message": f"Added {name} to emergency contacts.",
             "contact": new_contact,
+            "contacts": all_contacts,
             "all_contacts": all_contacts
         })
     except Exception as e:
@@ -397,6 +401,14 @@ def delete_contact(contact_id):
     """Delete an emergency contact."""
     try:
         user_id = session.get("user_id")
+        if not user_id:
+            body = request.get_json(silent=True) or {}
+            phone = request.args.get("phone") or body.get("phone")
+            if phone:
+                user = db.get_user_by_phone(phone)
+                if user:
+                    user_id = user["id"]
+
         if not user_id:
             return jsonify({"status": "error", "error": "Authentication required."}), 401
 
@@ -534,19 +546,20 @@ def cancel_emergency():
 
 @app.route("/api/rights", methods=["GET"])
 def get_all_rights():
-    """Return all categories with summary information for the Law Library."""
-    summaries = []
+    """Return all categories with complete statutory information for the Law Library."""
+    categories = []
     for cat_slug, cat in RIGHTS_DATA.items():
-        summaries.append({
-            "slug": cat_slug,
-            "title": cat.get("title", ""),
-            "subtitle": cat.get("subtitle", ""),
-            "overview": cat.get("overview", ""),
-            "lawCount": len(cat.get("laws", [])),
-            "schemeCount": len(cat.get("schemes", [])),
-            "authorityCount": len(cat.get("authorities", []))
-        })
-    return jsonify(summaries)
+        item = dict(cat)
+        item["slug"] = cat_slug
+        item["lawCount"] = len(cat.get("laws", []))
+        item["schemeCount"] = len(cat.get("schemes", []))
+        item["authorityCount"] = len(cat.get("authorities", []))
+        categories.append(item)
+    return jsonify({
+        "status": "success",
+        "count": len(categories),
+        "categories": categories
+    })
 
 
 @app.route("/api/rights/<category_slug>", methods=["GET"])
