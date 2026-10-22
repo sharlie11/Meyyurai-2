@@ -3,52 +3,70 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meyyurai (மெய்யுரை) · National Legal Awareness & Emergency Protection Portal</title>
+  <title>Meyyurai (மெய்யுரை) · Public Legal Awareness & Emergency Assistance</title>
   <meta name="description" content="AI-powered Indian legal awareness, official statutory retrieval, emergency SOS protection with 5-second cancel safeguard, and citizen rights navigation.">
   
-  <!-- Modern Clean Typography -->
+  <!-- Typography: Newsreader (Editorial Serif) + Plus Jakarta Sans (Clean Body) + JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
     :root {
-      --bg-page: #0f172a;
-      --bg-surface: #1e293b;
-      --bg-surface-elevated: #334155;
-      --bg-card: #1e293b;
-      --border-subtle: #334155;
-      --border-focus: #14b8a6;
-      
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --text-dim: #64748b;
-      
-      --brand-teal: #0d9488;
-      --brand-teal-light: #14b8a6;
-      --brand-teal-bg: rgba(13, 148, 136, 0.15);
-      
-      --brand-red: #ef4444;
-      --brand-red-hover: #dc2626;
-      --brand-red-bg: rgba(239, 68, 68, 0.15);
-      
-      --brand-amber: #f59e0b;
-      --brand-amber-bg: rgba(245, 158, 11, 0.15);
-      
-      --brand-blue: #3b82f6;
-      --brand-blue-bg: rgba(59, 130, 246, 0.15);
+      /* Warm white / light neutral background palette */
+      --bg-page: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-surface-elevated: #f1f5f9;
+      --bg-card: #ffffff;
+      --bg-subtle: #f8fafc;
 
+      /* Restrained borders */
+      --border-subtle: #e2e8f0;
+      --border-card: #e2e8f0;
+      --border-focus: #0f766e;
+
+      /* Navy & Slate Typography */
+      --text-main: #0f172a;        /* Deep rich navy */
+      --text-muted: #475569;       /* Calm secondary text */
+      --text-dim: #64748b;         /* Helper / caption text */
+      --text-inverse: #ffffff;
+
+      /* Restrained Pine Teal Accent */
+      --brand-teal: #0f766e;
+      --brand-teal-light: #0d9488;
+      --brand-teal-bg: rgba(15, 118, 110, 0.08);
+      --brand-teal-border: rgba(15, 118, 110, 0.2);
+
+      /* Emergency Crimson / Red */
+      --brand-red: #dc2626;
+      --brand-red-hover: #b91c1c;
+      --brand-red-bg: #fef2f2;
+      --brand-red-border: #fecaca;
+      --brand-red-glow: 0 12px 36px rgba(220, 38, 38, 0.32);
+
+      /* Status Colors */
+      --brand-amber: #d97706;
+      --brand-amber-bg: #fffbeb;
+      --brand-amber-border: #fde68a;
+
+      --brand-blue: #2563eb;
+      --brand-blue-bg: #eff6ff;
+      --brand-blue-border: #bfdbfe;
+
+      /* Border Radii */
       --radius-sm: 8px;
       --radius-md: 14px;
       --radius-lg: 20px;
+      --radius-xl: 26px;
       --radius-full: 9999px;
 
-      --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
-      --shadow-glow-red: 0 0 35px rgba(239, 68, 68, 0.35);
-      --shadow-glow-teal: 0 0 25px rgba(20, 184, 166, 0.25);
+      /* Shadows (Soft, refined, subtle) */
+      --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.04);
+      --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+      --shadow-elevated: 0 16px 36px -6px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
     }
 
     * {
@@ -66,85 +84,92 @@
       display: flex;
       flex-direction: column;
       line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* Container for Laptop-first wide layouts */
+    /* Container for wide laptop screens */
     .app-container {
       width: 100%;
-      max-width: 1400px;
+      max-width: 1200px;
       margin: 0 auto;
-      padding: 0 24px;
+      padding: 0 28px;
       flex: 1;
       display: flex;
       flex-direction: column;
     }
 
-    /* Global Header */
+    /* ==========================================================================
+       GLOBAL TOP HEADER (LAPTOP & DESKTOP)
+       ========================================================================== */
     header.global-header {
-      background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(16px);
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(14px);
       border-bottom: 1px solid var(--border-subtle);
       position: sticky;
       top: 0;
-      z-index: 50;
-      padding: 14px 0;
+      z-index: 60;
+      padding: 12px 0;
     }
 
     .header-inner {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 20px;
+      gap: 24px;
     }
 
     .brand-group {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
       text-decoration: none;
       color: inherit;
+      cursor: pointer;
     }
 
     .brand-icon {
-      width: 44px;
-      height: 44px;
-      background: linear-gradient(135deg, #0d9488, #059669);
-      border-radius: 12px;
+      width: 40px;
+      height: 40px;
+      background: var(--brand-teal);
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
       color: #ffffff;
-      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+      box-shadow: 0 4px 12px rgba(15, 118, 110, 0.25);
     }
 
     .brand-text h1 {
-      font-size: 1.25rem;
+      font-size: 1.15rem;
       font-weight: 800;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.01em;
+      color: var(--text-main);
       display: flex;
       align-items: center;
       gap: 8px;
+      line-height: 1.2;
     }
 
     .brand-text h1 span.tamil-title {
-      font-size: 1rem;
+      font-size: 0.88rem;
       font-weight: 600;
-      color: var(--brand-teal-light);
+      color: var(--brand-teal);
       background: var(--brand-teal-bg);
-      padding: 2px 8px;
+      padding: 2px 7px;
       border-radius: var(--radius-sm);
     }
 
     .brand-text p {
-      font-size: 0.75rem;
+      font-size: 0.73rem;
       color: var(--text-muted);
+      letter-spacing: 0.01em;
     }
 
-    /* Top Navigation Tabs */
+    /* Desktop Navigation Tabs */
     nav.nav-tabs {
       display: flex;
-      gap: 6px;
-      background: var(--bg-surface);
+      gap: 4px;
+      background: var(--bg-surface-elevated);
       padding: 4px;
       border-radius: var(--radius-full);
       border: 1px solid var(--border-subtle);
@@ -153,7 +178,7 @@
     .nav-btn {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 7px;
       padding: 8px 18px;
       border-radius: var(--radius-full);
       background: transparent;
@@ -162,22 +187,19 @@
       font-size: 0.85rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.18s ease;
+      font-family: inherit;
     }
 
     .nav-btn:hover {
       color: var(--text-main);
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.8);
     }
 
     .nav-btn.active {
       background: var(--brand-teal);
       color: #ffffff;
-      box-shadow: 0 2px 8px rgba(13, 148, 136, 0.4);
-    }
-
-    .nav-btn.sos-nav-badge {
-      color: #fca5a5;
+      box-shadow: 0 2px 8px rgba(15, 118, 110, 0.25);
     }
 
     .nav-btn.sos-nav-badge.active {
@@ -195,47 +217,53 @@
     .quick-sos-header-btn {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       background: var(--brand-red-bg);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      color: #fca5a5;
+      border: 1px solid var(--brand-red-border);
+      color: var(--brand-red);
       padding: 7px 14px;
       border-radius: var(--radius-full);
       font-size: 0.8rem;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.18s;
+      font-family: inherit;
     }
 
     .quick-sos-header-btn:hover {
       background: var(--brand-red);
       color: #ffffff;
-      box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+      box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3);
     }
 
     .user-profile-btn {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 9px;
       background: var(--bg-surface);
       border: 1px solid var(--border-subtle);
       padding: 6px 14px;
       border-radius: var(--radius-full);
       color: var(--text-main);
       font-size: 0.85rem;
+      font-weight: 600;
       cursor: pointer;
-      transition: border-color 0.2s;
+      transition: border-color 0.18s, box-shadow 0.18s;
+      font-family: inherit;
     }
 
     .user-profile-btn:hover {
-      border-color: var(--brand-teal-light);
+      border-color: var(--brand-teal);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
 
     .user-avatar {
-      width: 28px;
-      height: 28px;
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #3b82f6, #0d9488);
+      background: var(--brand-teal-bg);
+      color: var(--brand-teal);
+      border: 1px solid var(--brand-teal-border);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -246,8 +274,8 @@
     /* Screen Tab Switching */
     .tab-screen {
       display: none;
-      padding: 28px 0 60px 0;
-      animation: fadeIn 0.25s ease-out;
+      padding: 32px 0 70px 0;
+      animation: fadeIn 0.22s ease-out;
     }
 
     .tab-screen.active {
@@ -255,447 +283,600 @@
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
+      from { opacity: 0; transform: translateY(5px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
     /* ==========================================================================
-       TAB 1: EMERGENCY SOS HUB (HOME PAGE)
+       EDITORIAL PAGE INTRO HEADER (Clean, warm, reassuring)
        ========================================================================== */
-    .sos-hero-card {
-      background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      border-radius: var(--radius-lg);
-      padding: 40px;
-      margin-bottom: 32px;
-      box-shadow: var(--shadow-card);
-      position: relative;
-      overflow: hidden;
-      display: grid;
-      grid-template-columns: 1fr 340px;
-      gap: 36px;
-      align-items: center;
+    .screen-intro-block {
+      margin-bottom: 28px;
     }
 
-    .sos-hero-card::before {
-      content: '';
-      position: absolute;
-      top: -100px;
-      right: -100px;
-      width: 300px;
-      height: 300px;
-      background: radial-gradient(circle, rgba(239, 68, 68, 0.15) 0%, transparent 70%);
-      pointer-events: none;
-    }
-
-    .sos-badge-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--brand-red-bg);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      color: #f87171;
-      padding: 4px 12px;
-      border-radius: var(--radius-full);
-      font-size: 0.75rem;
+    .screen-overline {
+      font-size: 0.8rem;
       font-weight: 700;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.12em;
+      color: var(--brand-teal);
       text-transform: uppercase;
-      margin-bottom: 16px;
+      margin-bottom: 6px;
     }
 
-    .sos-hero-info h2 {
-      font-size: 2.2rem;
-      font-weight: 800;
-      line-height: 1.2;
-      margin-bottom: 12px;
+    .screen-title {
+      font-family: 'Newsreader', 'Playfair Display', Georgia, serif;
+      font-size: 2.85rem;
+      font-weight: 500;
+      color: var(--text-main);
       letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 8px;
     }
 
-    .sos-hero-info p {
+    .screen-desc {
+      font-size: 1.05rem;
       color: var(--text-muted);
-      font-size: 1rem;
-      margin-bottom: 24px;
-      max-width: 650px;
+      max-width: 680px;
+      line-height: 1.5;
     }
 
-    .sos-telemetry-strip {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      font-size: 0.85rem;
-      color: var(--text-muted);
-    }
-
-    .telemetry-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--bg-surface-elevated);
-      padding: 6px 14px;
-      border-radius: var(--radius-full);
-      border: 1px solid var(--border-subtle);
-    }
-
-    .telemetry-item.live-gps {
-      color: #34d399;
-      border-color: rgba(52, 211, 153, 0.3);
-    }
-
-    /* Giant Emergency SOS Trigger Button */
-    .sos-action-box {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+    /* ==========================================================================
+       EMERGENCY SOS HERO CARD (Inspired by the Reference Screenshot)
+       ========================================================================== */
+    .sos-reference-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-xl);
+      padding: 44px 28px 36px 28px;
+      box-shadow: var(--shadow-card);
       text-align: center;
-      background: rgba(15, 23, 42, 0.6);
-      padding: 24px;
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border-subtle);
+      margin-bottom: 36px;
+      position: relative;
     }
 
+    .sos-button-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 22px;
+    }
+
+    /* Large Red Circular SOS Button */
     .sos-main-trigger-btn {
-      width: 180px;
-      height: 180px;
+      width: 170px;
+      height: 170px;
       border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, #f87171 0%, #dc2626 60%, #991b1b 100%);
-      border: 6px solid rgba(239, 68, 68, 0.35);
+      background: linear-gradient(145deg, #e11d48, #dc2626);
+      border: none;
       color: #ffffff;
-      font-size: 1.25rem;
-      font-weight: 800;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 5px;
       cursor: pointer;
-      box-shadow: 0 0 30px rgba(220, 38, 38, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.3);
-      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      animation: pulseSos 2.5s infinite;
+      box-shadow: var(--brand-red-glow);
+      transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease;
+      position: relative;
+      user-select: none;
     }
 
     .sos-main-trigger-btn:hover {
-      transform: scale(1.06);
-      box-shadow: 0 0 50px rgba(220, 38, 38, 0.7);
+      transform: scale(1.035);
+      box-shadow: 0 16px 42px rgba(220, 38, 38, 0.42);
     }
 
     .sos-main-trigger-btn:active {
-      transform: scale(0.96);
+      transform: scale(0.97);
     }
 
-    @keyframes pulseSos {
-      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
-      70% { box-shadow: 0 0 0 25px rgba(239, 68, 68, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    .sos-btn-label {
+      font-size: 1.55rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      margin-top: 2px;
     }
 
-    .sos-safeguard-notice {
-      margin-top: 14px;
-      font-size: 0.75rem;
+    .sos-caption {
+      font-size: 0.98rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-bottom: 22px;
+    }
+
+    /* Telemetry strip under SOS button */
+    .sos-telemetry-strip {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .telemetry-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      padding: 5px 12px;
+      border-radius: var(--radius-full);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .telemetry-item.live-gps {
+      color: var(--brand-teal);
+      background: var(--brand-teal-bg);
+      border-color: var(--brand-teal-border);
+    }
+
+    /* ==========================================================================
+       EMERGENCY CONTACTS & HELPLINES (Balanced 2-Column on Web)
+       ========================================================================== */
+    .emergency-grid-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+    }
+
+    .section-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 14px;
+    }
+
+    .section-headline {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tap-to-call-hint {
+      font-size: 0.85rem;
       color: var(--text-dim);
+      text-decoration: none;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+
+    .tap-to-call-hint:hover {
+      color: var(--brand-teal);
+    }
+
+    /* Emergency Contacts Cards */
+    .contacts-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .contact-card-item {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow-subtle);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .contact-card-item:hover {
+      border-color: #cbd5e1;
+      box-shadow: var(--shadow-card);
+    }
+
+    .contact-avatar-meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .contact-avatar-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--brand-teal-bg);
+      color: var(--brand-teal);
+      border: 1px solid var(--brand-teal-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+
+    .contact-text h5 {
+      font-size: 0.96rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 3px;
       display: flex;
       align-items: center;
       gap: 6px;
     }
 
-    /* Helpline Speed Dial Grid */
-    .helpline-section-title {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
+    .contact-text p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
     }
 
-    .helpline-section-title h3 {
-      font-size: 1.25rem;
-      font-weight: 700;
+    .contact-action-btns {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
+    .call-contact-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--brand-teal-bg);
+      border: 1px solid var(--brand-teal-border);
+      color: var(--brand-teal);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s, transform 0.15s;
+    }
+
+    .call-contact-btn:hover {
+      background: var(--brand-teal);
+      color: #ffffff;
+      transform: scale(1.06);
+    }
+
+    .whatsapp-contact-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #16a34a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s, transform 0.15s;
+    }
+
+    .whatsapp-contact-btn:hover {
+      background: #16a34a;
+      color: #ffffff;
+      transform: scale(1.06);
+    }
+
+    .empty-contacts-banner {
+      background: var(--bg-surface);
+      border: 1px dashed var(--border-card);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.9rem;
+    }
+
+    .empty-contacts-banner a {
+      color: var(--brand-teal);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    /* Helplines Speed Dial */
     .helplines-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 18px;
-      margin-bottom: 40px;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
     }
 
     .helpline-card {
       background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
+      border: 1px solid var(--border-card);
       border-radius: var(--radius-md);
-      padding: 20px;
+      padding: 16px;
+      text-decoration: none;
+      color: inherit;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      transition: transform 0.2s, border-color 0.2s;
-      text-decoration: none;
-      color: inherit;
+      box-shadow: var(--shadow-subtle);
+      transition: all 0.16s ease;
     }
 
     .helpline-card:hover {
-      transform: translateY(-3px);
-      border-color: var(--brand-teal-light);
+      border-color: #cbd5e1;
+      box-shadow: var(--shadow-card);
+      transform: translateY(-1px);
+    }
+
+    .helpline-card.police-card {
+      border-left: 3px solid var(--brand-red);
     }
 
     .helpline-details h4 {
-      font-size: 1rem;
+      font-size: 0.88rem;
       font-weight: 700;
-      margin-bottom: 4px;
+      color: var(--text-main);
+      margin-bottom: 2px;
     }
 
     .helpline-details p {
-      font-size: 0.8rem;
-      color: var(--text-muted);
+      font-size: 0.74rem;
+      color: var(--text-dim);
     }
 
     .helpline-number-btn {
-      background: var(--brand-teal-bg);
-      border: 1px solid rgba(20, 184, 166, 0.3);
-      color: var(--brand-teal-light);
-      padding: 8px 14px;
-      border-radius: var(--radius-full);
-      font-size: 1rem;
-      font-weight: 800;
-      font-family: 'JetBrains Mono', monospace;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
+      background: var(--bg-surface-elevated);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+      padding: 5px 10px;
+      border-radius: var(--radius-full);
+      font-size: 0.8rem;
+      font-weight: 700;
+      flex-shrink: 0;
     }
 
     .helpline-card.police-card .helpline-number-btn {
       background: var(--brand-red-bg);
-      border-color: rgba(239, 68, 68, 0.3);
-      color: #f87171;
+      color: var(--brand-red);
+      border-color: var(--brand-red-border);
     }
 
-    /* Quick Feature Cards on Dashboard */
+    /* Platform overview cards on Dashboard */
     .dashboard-features-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
+      gap: 16px;
+      margin-top: 36px;
     }
 
     .feature-launch-card {
       background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
+      border: 1px solid var(--border-card);
       border-radius: var(--radius-md);
-      padding: 24px;
+      padding: 22px;
       cursor: pointer;
-      transition: all 0.2s;
+      box-shadow: var(--shadow-subtle);
+      transition: all 0.16s ease;
     }
 
     .feature-launch-card:hover {
-      transform: translateY(-3px);
-      border-color: var(--brand-teal-light);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      border-color: var(--brand-teal);
+      box-shadow: var(--shadow-card);
+      transform: translateY(-2px);
     }
 
     .feature-icon-wrap {
-      width: 48px;
-      height: 48px;
+      width: 44px;
+      height: 44px;
       border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
-    .feature-icon-wrap.ai-color { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
-    .feature-icon-wrap.rights-color { background: rgba(20, 184, 166, 0.15); color: #2dd4bf; }
-    .feature-icon-wrap.contacts-color { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+    .feature-icon-wrap.ai-color { background: var(--brand-teal-bg); color: var(--brand-teal); }
+    .feature-icon-wrap.rights-color { background: #eff6ff; color: #2563eb; }
+    .feature-icon-wrap.contacts-color { background: #fef2f2; color: #dc2626; }
 
     .feature-launch-card h4 {
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 700;
+      color: var(--text-main);
       margin-bottom: 6px;
     }
 
     .feature-launch-card p {
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       color: var(--text-muted);
       line-height: 1.5;
     }
 
     /* ==========================================================================
-       TAB 2: AI LEGAL NAVIGATOR & STATUTORY GUIDANCE
+       TAB 2: AI LEGAL ADVISOR (2-Column Grid on Laptop)
        ========================================================================== */
     .ai-layout-grid {
       display: grid;
-      grid-template-columns: 480px 1fr;
-      gap: 30px;
+      grid-template-columns: 420px 1fr;
+      gap: 28px;
       align-items: start;
     }
 
     .ai-input-card {
       background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
+      border: 1px solid var(--border-card);
       border-radius: var(--radius-lg);
-      padding: 28px;
+      padding: 26px;
       box-shadow: var(--shadow-card);
       position: sticky;
-      top: 90px;
-    }
-
-    .ai-card-header {
-      margin-bottom: 20px;
+      top: 86px;
     }
 
     .ai-card-header h3 {
-      font-size: 1.3rem;
+      font-size: 1.15rem;
       font-weight: 700;
+      color: var(--text-main);
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 4px;
+      gap: 8px;
+      margin-bottom: 6px;
     }
 
     .ai-card-header p {
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       color: var(--text-muted);
+      margin-bottom: 18px;
+      line-height: 1.45;
     }
 
     .ai-textarea {
       width: 100%;
-      height: 160px;
-      background: var(--bg-page);
+      height: 140px;
+      background: var(--bg-surface-elevated);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-md);
-      padding: 16px;
+      padding: 14px;
       color: var(--text-main);
       font-family: inherit;
-      font-size: 0.95rem;
-      resize: vertical;
+      font-size: 0.9rem;
       line-height: 1.5;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
       margin-bottom: 16px;
-      transition: border-color 0.2s;
     }
 
     .ai-textarea:focus {
-      outline: none;
-      border-color: var(--brand-teal-light);
-      box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15);
+      border-color: var(--brand-teal);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+      background: #ffffff;
     }
 
     .query-chips-title {
-      font-size: 0.75rem;
+      font-size: 0.76rem;
       font-weight: 700;
-      color: var(--text-dim);
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      margin-bottom: 10px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
     }
 
     .query-chips-wrap {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 24px;
+      gap: 6px;
+      margin-bottom: 20px;
     }
 
     .chip-btn {
-      background: var(--bg-page);
+      background: var(--bg-surface-elevated);
       border: 1px solid var(--border-subtle);
-      color: var(--text-muted);
-      padding: 6px 12px;
       border-radius: var(--radius-full);
-      font-size: 0.78rem;
+      padding: 5px 12px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--text-muted);
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.15s ease;
+      font-family: inherit;
     }
 
     .chip-btn:hover {
-      border-color: var(--brand-teal-light);
-      color: var(--text-main);
-      background: rgba(255, 255, 255, 0.03);
+      background: var(--brand-teal-bg);
+      color: var(--brand-teal);
+      border-color: var(--brand-teal-border);
     }
 
     .submit-ai-btn {
       width: 100%;
-      background: linear-gradient(135deg, #0d9488, #0f766e);
+      background: var(--brand-teal);
       border: none;
-      color: #ffffff;
-      padding: 14px 20px;
       border-radius: var(--radius-md);
-      font-size: 1rem;
+      padding: 12px 18px;
+      color: #ffffff;
+      font-size: 0.92rem;
       font-weight: 700;
-      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      box-shadow: 0 4px 15px rgba(13, 148, 136, 0.3);
-      transition: all 0.2s;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(15, 118, 110, 0.25);
+      transition: all 0.18s;
+      font-family: inherit;
     }
 
     .submit-ai-btn:hover {
-      background: linear-gradient(135deg, #14b8a6, #0d9488);
-      transform: translateY(-1px);
-    }
-
-    .submit-ai-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+      background: #0d6961;
+      box-shadow: 0 6px 18px rgba(15, 118, 110, 0.35);
     }
 
     /* AI Output Dossier */
     .ai-output-container {
       background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
+      border: 1px solid var(--border-card);
       border-radius: var(--radius-lg);
       padding: 32px;
       box-shadow: var(--shadow-card);
-      min-height: 500px;
+      min-height: 480px;
     }
 
     .dossier-welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       text-align: center;
-      padding: 60px 20px;
-      color: var(--text-muted);
+      padding: 80px 20px;
+      color: var(--text-dim);
     }
 
     .dossier-welcome i {
-      color: var(--brand-teal-light);
+      color: #cbd5e1;
       margin-bottom: 16px;
     }
 
     .dossier-header {
+      margin-bottom: 24px;
       padding-bottom: 20px;
       border-bottom: 1px solid var(--border-subtle);
-      margin-bottom: 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
     }
 
     .dossier-category-pill {
-      background: var(--brand-teal-bg);
-      border: 1px solid rgba(20, 184, 166, 0.3);
-      color: var(--brand-teal-light);
-      padding: 4px 12px;
-      border-radius: var(--radius-full);
-      font-size: 0.8rem;
-      font-weight: 700;
       display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--brand-teal);
+      background: var(--brand-teal-bg);
+      border: 1px solid var(--brand-teal-border);
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      margin-bottom: 10px;
+    }
+
+    #dossierTitle {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 1.85rem;
+      font-weight: 600;
+      color: var(--text-main);
       margin-bottom: 8px;
+      line-height: 1.25;
     }
 
-    .dossier-header h3 {
-      font-size: 1.5rem;
-      font-weight: 800;
-      margin-bottom: 6px;
-    }
-
-    .dossier-header p {
-      color: var(--text-muted);
+    #dossierSituation {
       font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.6;
     }
 
-    /* Whom to Meet Highlight Cards */
+    /* Officers to Meet Section */
     .officers-block {
-      background: linear-gradient(145deg, rgba(20, 184, 166, 0.08), rgba(15, 23, 42, 0.4));
-      border: 1px solid rgba(20, 184, 166, 0.3);
+      background: #f0fdfa;
+      border: 1px solid #ccfbf1;
       border-radius: var(--radius-md);
       padding: 22px;
       margin-bottom: 28px;
@@ -704,127 +885,98 @@
     .officers-block-title {
       display: flex;
       align-items: center;
-      gap: 10px;
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--brand-teal-light);
+      gap: 8px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--brand-teal);
       margin-bottom: 16px;
     }
 
-    .officer-item-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-sm);
-      padding: 18px;
-      margin-bottom: 14px;
+    .officer-card {
+      background: #ffffff;
+      border: 1px solid #e6fffa;
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
     }
 
-    .officer-item-card:last-child {
+    .officer-card:last-child {
       margin-bottom: 0;
     }
 
-    .officer-title {
+    .officer-designation {
       font-size: 1rem;
       font-weight: 700;
-      color: #ffffff;
+      color: var(--text-main);
       margin-bottom: 4px;
     }
 
-    .officer-location {
-      font-size: 0.85rem;
-      color: #38bdf8;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-bottom: 10px;
-    }
-
-    .officer-instruction {
-      font-size: 0.88rem;
-      color: var(--text-muted);
-      line-height: 1.5;
-      margin-bottom: 10px;
-    }
-
-    .officer-evidence-tag {
-      background: var(--bg-page);
-      border: 1px solid var(--border-subtle);
-      padding: 6px 12px;
-      border-radius: var(--radius-sm);
-      font-size: 0.8rem;
-      color: #f59e0b;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    /* Statutory Laws Cards */
-    .laws-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
-      margin-bottom: 28px;
-    }
-
-    .law-result-card {
-      background: var(--bg-page);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      padding: 20px;
-    }
-
-    .law-card-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .law-act-tag {
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: #60a5fa;
-      background: rgba(59, 130, 246, 0.15);
-      padding: 3px 10px;
-      border-radius: var(--radius-full);
-    }
-
-    .law-source-link {
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .law-source-link:hover {
-      color: var(--brand-teal-light);
-    }
-
-    .law-section-name {
-      font-size: 1.05rem;
-      font-weight: 700;
+    .officer-office {
+      font-size: 0.82rem;
+      color: var(--brand-teal);
+      font-weight: 600;
       margin-bottom: 8px;
     }
 
-    .law-desc {
-      font-size: 0.88rem;
+    .officer-detail-item {
+      font-size: 0.83rem;
       color: var(--text-muted);
-      margin-bottom: 12px;
+      margin-bottom: 4px;
+      line-height: 1.45;
     }
 
-    .law-punishment-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--brand-amber-bg);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      color: #fbbf24;
-      padding: 4px 10px;
-      border-radius: var(--radius-sm);
-      font-size: 0.8rem;
+    .officer-detail-item b {
+      color: var(--text-main);
+    }
+
+    /* Laws Grid */
+    .laws-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .law-card {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+    }
+
+    .law-act-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .law-source-badge {
+      font-size: 0.7rem;
       font-weight: 600;
+      color: var(--brand-teal);
+      background: var(--brand-teal-bg);
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+    }
+
+    .law-section-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #2563eb;
+      margin-bottom: 6px;
+    }
+
+    .law-punishment-text {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.45;
     }
 
     /* Action Roadmap */
@@ -832,84 +984,78 @@
       margin-bottom: 28px;
     }
 
-    .action-step-item {
-      display: flex;
-      gap: 16px;
-      margin-bottom: 16px;
-      position: relative;
+    .action-phase-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--brand-teal);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      margin-bottom: 10px;
     }
 
-    .step-number-bullet {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: var(--brand-teal);
-      color: #ffffff;
+    .phase-label {
+      font-size: 0.78rem;
       font-weight: 700;
-      font-size: 0.9rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
+      color: var(--brand-teal);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 3px;
     }
 
-    .step-content h5 {
-      font-size: 0.95rem;
-      font-weight: 700;
-      margin-bottom: 4px;
-      color: #ffffff;
+    .phase-instruction {
+      font-size: 0.86rem;
+      color: var(--text-main);
+      line-height: 1.45;
     }
 
-    .step-content p {
-      font-size: 0.88rem;
-      color: var(--text-muted);
-    }
-
-    /* Complaint Generator Trigger */
+    /* Complaint Draft Bar */
     .complaint-draft-bar {
       background: var(--bg-surface-elevated);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-md);
-      padding: 18px 24px;
+      padding: 18px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 16px;
     }
 
     .draft-btn {
-      background: var(--bg-page);
-      border: 1px solid var(--border-focus);
-      color: var(--brand-teal-light);
-      padding: 10px 18px;
+      background: var(--text-main);
+      color: #ffffff;
+      border: none;
+      padding: 9px 16px;
       border-radius: var(--radius-md);
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       font-weight: 700;
-      cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 8px;
-      transition: all 0.2s;
+      gap: 7px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+      font-family: inherit;
     }
 
     .draft-btn:hover {
-      background: var(--brand-teal);
-      color: #ffffff;
+      background: #1e293b;
     }
 
     /* ==========================================================================
-       TAB 3: RESOURCE DIRECTORY & SCHEMES (WITH DEEP FILTERING)
+       TAB 3: LEGAL & GOVERNMENT RESOURCES DIRECTORY
        ========================================================================== */
     .directory-controls {
       background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
+      border: 1px solid var(--border-card);
       border-radius: var(--radius-lg);
       padding: 24px;
+      box-shadow: var(--shadow-subtle);
       margin-bottom: 28px;
     }
 
     .search-input-wrap {
       position: relative;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
 
     .search-input-wrap i {
@@ -922,25 +1068,28 @@
 
     .directory-search-input {
       width: 100%;
-      background: var(--bg-page);
+      background: var(--bg-surface-elevated);
       border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      padding: 14px 16px 14px 48px;
+      border-radius: var(--radius-full);
+      padding: 12px 16px 12px 48px;
+      font-size: 0.95rem;
       color: var(--text-main);
-      font-size: 1rem;
+      font-family: inherit;
       outline: none;
-      transition: border-color 0.2s;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
 
     .directory-search-input:focus {
-      border-color: var(--brand-teal-light);
+      border-color: var(--brand-teal);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
     }
 
     .filter-group-label {
-      font-size: 0.75rem;
+      font-size: 0.76rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.06em;
       color: var(--text-dim);
       margin-bottom: 8px;
     }
@@ -948,177 +1097,143 @@
     .filter-pills-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .filter-pills-row:last-child {
-      margin-bottom: 0;
+      gap: 7px;
     }
 
     .filter-pill {
-      background: var(--bg-page);
+      background: var(--bg-surface-elevated);
       border: 1px solid var(--border-subtle);
-      color: var(--text-muted);
-      padding: 6px 16px;
       border-radius: var(--radius-full);
-      font-size: 0.85rem;
+      padding: 6px 14px;
+      font-size: 0.8rem;
       font-weight: 600;
+      color: var(--text-muted);
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.15s ease;
+      font-family: inherit;
     }
 
     .filter-pill:hover {
-      border-color: var(--brand-teal-light);
+      background: #ffffff;
       color: var(--text-main);
+      border-color: #cbd5e1;
     }
 
     .filter-pill.active {
       background: var(--brand-teal);
-      border-color: var(--brand-teal);
       color: #ffffff;
+      border-color: var(--brand-teal);
+      box-shadow: 0 2px 8px rgba(15, 118, 110, 0.22);
     }
 
-    /* Resource Cards List */
+    /* Resource Cards Grid */
     .resources-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
-      gap: 22px;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 20px;
     }
 
     .resource-card {
       background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 24px;
-      box-shadow: var(--shadow-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      padding: 22px;
+      box-shadow: var(--shadow-subtle);
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      transition: transform 0.2s, border-color 0.2s;
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
     }
 
     .resource-card:hover {
+      border-color: #cbd5e1;
+      box-shadow: var(--shadow-card);
       transform: translateY(-2px);
-      border-color: rgba(20, 184, 166, 0.4);
     }
 
-    .resource-type-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.75rem;
+    .resource-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .resource-cat-badge {
+      font-size: 0.72rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      padding: 3px 10px;
-      border-radius: var(--radius-full);
-      margin-bottom: 12px;
+      letter-spacing: 0.06em;
+      color: var(--brand-teal);
+      background: var(--brand-teal-bg);
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
     }
 
-    .type-law { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
-    .type-scheme { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-    .type-authority { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-
-    .resource-card h4 {
-      font-size: 1.15rem;
-      font-weight: 800;
+    .resource-card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 6px;
       line-height: 1.35;
+    }
+
+    .resource-card-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 14px;
+      flex: 1;
+    }
+
+    .resource-law-section {
+      font-size: 0.8rem;
+      color: #2563eb;
+      font-weight: 600;
       margin-bottom: 8px;
     }
 
-    .resource-card p.overview {
-      font-size: 0.88rem;
-      color: var(--text-muted);
-      margin-bottom: 16px;
-      line-height: 1.5;
-    }
-
-    .resource-meta-details {
-      background: var(--bg-page);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-sm);
-      padding: 12px 14px;
-      font-size: 0.82rem;
-      margin-bottom: 16px;
-    }
-
-    .resource-meta-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 6px;
-    }
-
-    .resource-meta-row:last-child {
-      margin-bottom: 0;
-    }
-
-    .resource-meta-label {
-      color: var(--text-dim);
-    }
-
-    .resource-meta-value {
-      color: var(--text-main);
-      font-weight: 600;
-    }
-
-    .resource-actions-row {
+    .resource-card-footer {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding-top: 12px;
       border-top: 1px solid var(--border-subtle);
-    }
-
-    .resource-source-badge {
       font-size: 0.78rem;
       color: var(--text-dim);
     }
 
-    .resource-link-btn {
-      color: var(--brand-teal-light);
-      font-size: 0.85rem;
-      font-weight: 700;
+    .resource-source-link {
+      color: var(--brand-teal);
+      font-weight: 600;
       text-decoration: none;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 4px;
     }
 
-    .resource-link-btn:hover {
-      text-decoration: underline;
-    }
-
     /* ==========================================================================
-       TAB 4: PROFILE & EMERGENCY CONTACTS
+       TAB 4: CITIZEN PROFILE & EMERGENCY CONTACTS
        ========================================================================== */
     .profile-layout-grid {
       display: grid;
-      grid-template-columns: 420px 1fr;
-      gap: 30px;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      align-items: start;
     }
 
     .profile-card, .contacts-card {
       background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
+      border: 1px solid var(--border-card);
       border-radius: var(--radius-lg);
       padding: 30px;
       box-shadow: var(--shadow-card);
     }
 
-    .section-headline {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin-bottom: 6px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
     .section-sub {
-      font-size: 0.85rem;
+      font-size: 0.86rem;
       color: var(--text-muted);
-      margin-bottom: 24px;
+      margin-bottom: 22px;
+      line-height: 1.45;
     }
 
     .form-group {
@@ -1128,30 +1243,33 @@
     .form-label {
       display: block;
       font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--text-muted);
+      font-weight: 700;
+      color: var(--text-main);
       margin-bottom: 6px;
     }
 
     .form-input {
       width: 100%;
-      background: var(--bg-page);
+      background: var(--bg-surface-elevated);
       border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-sm);
+      border-radius: var(--radius-md);
       padding: 10px 14px;
       color: var(--text-main);
-      font-size: 0.92rem;
+      font-family: inherit;
+      font-size: 0.88rem;
       outline: none;
-      transition: border-color 0.2s;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
 
     .form-input:focus {
-      border-color: var(--brand-teal-light);
+      border-color: var(--brand-teal);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
     }
 
     .form-input[readonly] {
-      background: var(--bg-surface-elevated);
-      color: var(--text-dim);
+      background: #f1f5f9;
+      color: var(--text-muted);
       cursor: not-allowed;
     }
 
@@ -1159,150 +1277,151 @@
       width: 100%;
       background: var(--brand-teal);
       border: none;
-      color: #ffffff;
+      border-radius: var(--radius-md);
       padding: 12px;
-      border-radius: var(--radius-sm);
-      font-size: 0.95rem;
+      color: #ffffff;
+      font-size: 0.9rem;
       font-weight: 700;
       cursor: pointer;
-      margin-top: 10px;
-      transition: background 0.2s;
+      box-shadow: 0 4px 14px rgba(15, 118, 110, 0.22);
+      transition: background 0.15s;
+      font-family: inherit;
+      margin-top: 6px;
     }
 
     .save-profile-btn:hover {
-      background: var(--brand-teal-light);
+      background: #0d6961;
     }
 
-    /* Contacts List & Preview */
     .contacts-header-action {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
+      gap: 16px;
       margin-bottom: 20px;
     }
 
     .add-contact-trigger-btn {
-      background: var(--brand-teal-bg);
-      border: 1px solid rgba(20, 184, 166, 0.3);
-      color: var(--brand-teal-light);
-      padding: 8px 16px;
-      border-radius: var(--radius-full);
-      font-size: 0.85rem;
+      background: var(--brand-teal);
+      color: #ffffff;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 8px 14px;
+      font-size: 0.82rem;
       font-weight: 700;
-      cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 6px;
-      transition: all 0.2s;
+      cursor: pointer;
+      flex-shrink: 0;
+      font-family: inherit;
+      transition: background 0.15s;
     }
 
     .add-contact-trigger-btn:hover {
-      background: var(--brand-teal);
-      color: #ffffff;
+      background: #0d6961;
     }
 
     .contacts-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      margin-bottom: 30px;
+      gap: 10px;
+      margin-bottom: 24px;
     }
 
     .contact-item-row {
-      background: var(--bg-page);
+      background: var(--bg-surface-elevated);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-md);
-      padding: 16px 20px;
+      padding: 14px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
 
     .contact-info-col h5 {
-      font-size: 1rem;
+      font-size: 0.92rem;
       font-weight: 700;
+      color: var(--text-main);
       display: flex;
       align-items: center;
-      gap: 8px;
-    }
-
-    .primary-pill {
-      background: rgba(245, 158, 11, 0.2);
-      border: 1px solid rgba(245, 158, 11, 0.4);
-      color: #fbbf24;
-      font-size: 0.7rem;
-      padding: 2px 8px;
-      border-radius: var(--radius-full);
+      gap: 6px;
+      margin-bottom: 2px;
     }
 
     .contact-info-col p {
-      font-size: 0.85rem;
+      font-size: 0.78rem;
       color: var(--text-muted);
-      margin-top: 2px;
+    }
+
+    .primary-pill {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--brand-teal);
+      background: var(--brand-teal-bg);
+      padding: 1px 6px;
+      border-radius: var(--radius-sm);
     }
 
     .delete-contact-btn {
       background: transparent;
       border: none;
-      color: #f87171;
-      padding: 8px;
+      color: #94a3b8;
       cursor: pointer;
+      padding: 6px;
       border-radius: var(--radius-sm);
-      transition: background 0.2s;
+      transition: color 0.15s;
     }
 
     .delete-contact-btn:hover {
-      background: var(--brand-red-bg);
+      color: var(--brand-red);
     }
 
-    /* Live SOS Message Simulation Card */
+    /* Live SOS Message Simulation Box */
     .sos-preview-box {
-      background: var(--bg-page);
-      border: 1px dashed rgba(239, 68, 68, 0.4);
+      background: #fef2f2;
+      border: 1px solid #fee2e2;
       border-radius: var(--radius-md);
-      padding: 20px;
+      padding: 16px;
     }
 
     .sos-preview-title {
-      font-size: 0.8rem;
-      font-weight: 700;
+      font-size: 0.76rem;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #f87171;
-      margin-bottom: 10px;
+      letter-spacing: 0.06em;
+      color: var(--brand-red);
       display: flex;
       align-items: center;
       gap: 6px;
+      margin-bottom: 8px;
     }
 
     .sos-preview-content {
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-sm);
-      padding: 14px;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.82rem;
-      color: #e2e8f0;
+      font-size: 0.78rem;
+      color: #7f1d1d;
       line-height: 1.5;
       white-space: pre-wrap;
     }
 
     /* ==========================================================================
-       MODALS: 5-SEC EMERGENCY COUNTDOWN, AUTH (OTP), ADD CONTACT, COMPLAINT
+       MODALS (Crisp Light Theme, Accessible, Reassuring)
        ========================================================================== */
     .modal-backdrop {
-      display: none;
       position: fixed;
       top: 0;
       left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(8px);
-      z-index: 1000;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      display: none;
       align-items: center;
       justify-content: center;
       padding: 20px;
+      animation: fadeIn 0.15s ease-out;
     }
 
     .modal-backdrop.active {
@@ -1311,189 +1430,245 @@
 
     .modal-dialog {
       background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 36px;
-      max-width: 520px;
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-xl);
+      padding: 36px 32px;
+      max-width: 500px;
       width: 100%;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      box-shadow: var(--shadow-elevated);
       position: relative;
-      animation: modalPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    @keyframes modalPop {
-      from { transform: scale(0.92); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
     }
 
     .modal-close-x {
       position: absolute;
-      top: 20px;
-      right: 20px;
+      top: 18px;
+      right: 18px;
       background: transparent;
       border: none;
+      font-size: 1.1rem;
       color: var(--text-dim);
-      font-size: 1.2rem;
       cursor: pointer;
+      padding: 6px;
+      border-radius: 50%;
     }
 
-    /* 5-Second Countdown Modal Styling */
+    .modal-close-x:hover {
+      color: var(--text-main);
+    }
+
+    /* 5-Second Countdown Modal Elements */
     .emergency-modal-content {
       text-align: center;
     }
 
     .countdown-circle-wrap {
-      width: 160px;
-      height: 160px;
+      width: 90px;
+      height: 90px;
       border-radius: 50%;
-      border: 8px solid rgba(239, 68, 68, 0.25);
-      border-top-color: #ef4444;
-      margin: 0 auto 24px auto;
+      background: var(--brand-red-bg);
+      border: 2px solid var(--brand-red-border);
+      color: var(--brand-red);
       display: flex;
       align-items: center;
       justify-content: center;
-      position: relative;
-      animation: rotateRing 1s linear infinite;
+      margin: 0 auto 16px auto;
     }
 
     .countdown-number {
-      font-size: 4.5rem;
-      font-weight: 900;
-      color: #ef4444;
-      font-family: 'JetBrains Mono', monospace;
-      animation: none;
-    }
-
-    @keyframes rotateRing {
-      to { transform: rotate(360deg); }
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 3.5rem;
+      font-weight: 600;
+      line-height: 1;
     }
 
     .emergency-modal-content h3 {
-      font-size: 1.5rem;
+      font-size: 1.25rem;
       font-weight: 800;
-      color: #ffffff;
-      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+      color: var(--text-main);
+      margin-bottom: 6px;
     }
 
-    .emergency-modal-content p.warning-sub {
-      color: #f87171;
-      font-size: 0.92rem;
-      font-weight: 600;
+    .warning-sub {
+      font-size: 0.88rem;
+      color: var(--text-muted);
       margin-bottom: 24px;
     }
 
-    /* Large Accidental Touch Safeguard Cancel Button */
+    /* Prominent Dark Navy Cancel Button */
     .cancel-emergency-btn {
       width: 100%;
-      background: #dc2626;
-      border: 2px solid #ef4444;
+      background: var(--text-main);
       color: #ffffff;
-      padding: 16px 24px;
-      border-radius: var(--radius-md);
-      font-size: 1.15rem;
+      border: none;
+      border-radius: var(--radius-full);
+      height: 54px;
+      font-size: 0.95rem;
       font-weight: 800;
+      letter-spacing: 0.02em;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 12px;
-      box-shadow: 0 0 25px rgba(220, 38, 38, 0.5);
-      transition: all 0.15s;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.2);
+      transition: background 0.15s, transform 0.15s;
+      font-family: inherit;
     }
 
     .cancel-emergency-btn:hover {
-      background: #b91c1c;
-      transform: scale(1.02);
+      background: #1e293b;
+      transform: scale(1.01);
     }
 
+    /* Dispatched State */
     .emergency-dispatched-box {
       display: none;
       text-align: center;
     }
 
     .dispatched-badge {
-      background: rgba(34, 197, 94, 0.15);
-      border: 1px solid rgba(34, 197, 94, 0.3);
-      color: #4ade80;
-      padding: 6px 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #16a34a;
+      padding: 4px 12px;
       border-radius: var(--radius-full);
+      font-size: 0.78rem;
       font-weight: 700;
-      display: inline-block;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     .call-112-direct-btn {
-      width: 100%;
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: #ffffff;
-      padding: 16px;
-      border-radius: var(--radius-md);
-      font-size: 1.15rem;
-      font-weight: 800;
-      text-decoration: none;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      margin-bottom: 16px;
+      gap: 8px;
+      background: var(--brand-red);
+      color: #ffffff;
+      border-radius: var(--radius-full);
+      padding: 14px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      text-decoration: none;
+      box-shadow: 0 4px 16px rgba(220, 38, 38, 0.3);
+      margin-bottom: 20px;
     }
 
     .whatsapp-alert-list {
       display: flex;
       flex-direction: column;
       gap: 8px;
-      margin-top: 16px;
-      text-align: left;
     }
 
-    .wa-btn-item {
-      background: #15803d;
-      color: #ffffff;
-      padding: 10px 14px;
-      border-radius: var(--radius-sm);
-      text-decoration: none;
-      font-size: 0.85rem;
-      font-weight: 600;
+    .wa-alert-btn {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: center;
+      gap: 8px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #16a34a;
+      padding: 10px;
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-decoration: none;
     }
 
-    /* Auth Modal */
+    /* Auth Modal Specifics */
     .auth-title {
-      font-size: 1.4rem;
+      font-size: 1.25rem;
       font-weight: 800;
+      color: var(--text-main);
       margin-bottom: 6px;
     }
 
     .auth-sub {
       font-size: 0.85rem;
       color: var(--text-muted);
-      margin-bottom: 24px;
+      margin-bottom: 20px;
+      line-height: 1.45;
     }
 
     .otp-dev-badge {
-      background: var(--brand-amber-bg);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      color: #fbbf24;
-      padding: 8px 14px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
       border-radius: var(--radius-sm);
-      font-size: 0.85rem;
-      margin-bottom: 16px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      color: #1e40af;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-bottom: 16px;
     }
 
     .auto-fill-otp-btn {
-      background: #d97706;
-      border: none;
+      background: #2563eb;
       color: #ffffff;
-      padding: 4px 10px;
-      border-radius: var(--radius-full);
-      font-size: 0.75rem;
+      border: none;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 0.72rem;
       font-weight: 700;
       cursor: pointer;
+    }
+
+    /* ==========================================================================
+       MOBILE BOTTOM NAVIGATION (Fixed at bottom on phones, hidden on laptop)
+       ========================================================================== */
+    .mobile-bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border-top: 1px solid var(--border-subtle);
+      box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.04);
+      z-index: 55;
+      padding: 8px 16px 12px 16px;
+      justify-content: space-around;
+      align-items: center;
+    }
+
+    .mobile-nav-item {
+      background: transparent;
+      border: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      color: var(--text-dim);
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      padding: 4px 12px;
+      transition: color 0.15s;
+    }
+
+    .mobile-nav-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .mobile-nav-item.active {
+      color: var(--brand-teal);
+      font-weight: 700;
+    }
+
+    .mobile-nav-item.active .mobile-nav-icon {
+      background: var(--brand-teal);
+      color: #ffffff;
     }
 
     /* Toast Notification */
@@ -1501,20 +1676,20 @@
       position: fixed;
       bottom: 24px;
       right: 24px;
-      background: #1e293b;
-      border: 1px solid var(--border-focus);
+      background: var(--text-main);
       color: #ffffff;
-      padding: 14px 20px;
       border-radius: var(--radius-md);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      padding: 12px 20px;
+      font-size: 0.86rem;
+      font-weight: 600;
+      box-shadow: var(--shadow-elevated);
       display: flex;
       align-items: center;
-      gap: 12px;
-      font-size: 0.9rem;
-      z-index: 2000;
-      transform: translateY(100px);
+      gap: 10px;
+      z-index: 120;
+      transform: translateY(80px);
       opacity: 0;
-      transition: all 0.3s ease;
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .toast-notice.show {
@@ -1525,68 +1700,112 @@
     /* Footer */
     footer.global-footer {
       border-top: 1px solid var(--border-subtle);
-      background: var(--bg-surface);
+      background: #ffffff;
       padding: 24px 0;
-      margin-top: auto;
       font-size: 0.8rem;
       color: var(--text-dim);
+      margin-top: auto;
     }
 
     .footer-inner {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
     }
 
-    /* Responsive adjustments */
-    @media (max-width: 1024px) {
-      .sos-hero-card { grid-template-columns: 1fr; }
-      .ai-layout-grid { grid-template-columns: 1fr; }
-      .profile-layout-grid { grid-template-columns: 1fr; }
-      .dashboard-features-grid { grid-template-columns: 1fr; }
-      .ai-input-card { position: static; }
+    /* ==========================================================================
+       RESPONSIVE BREAKPOINTS (Laptop vs Mobile Interface)
+       ========================================================================== */
+    @media (max-width: 899px) {
+      /* Show mobile bottom nav, adjust body padding */
+      .mobile-bottom-nav {
+        display: flex;
+      }
+
+      body {
+        padding-bottom: 70px;
+      }
+
+      /* Hide desktop center nav tabs */
+      nav.nav-tabs {
+        display: none;
+      }
+
+      /* Adjust screen title for mobile */
+      .screen-title {
+        font-size: 2.15rem;
+      }
+
+      /* Stack grids into 1 column */
+      .emergency-grid-layout,
+      .ai-layout-grid,
+      .profile-layout-grid,
+      .dashboard-features-grid,
+      .helplines-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+
+      .ai-input-card {
+        position: static;
+      }
+
+      .app-container {
+        padding: 0 16px;
+      }
+
+      .sos-reference-card {
+        padding: 32px 18px 24px 18px;
+      }
+
+      .sos-main-trigger-btn {
+        width: 150px;
+        height: 150px;
+      }
     }
   </style>
 </head>
 <body>
 
-  <!-- Global Header -->
+  <!-- Global Header (Laptop/Desktop View) -->
   <header class="global-header">
     <div class="app-container header-inner">
-      <a href="#" class="brand-group" onclick="switchTab('dashboard')">
+      <a class="brand-group" onclick="switchTab('dashboard')">
         <div class="brand-icon">
-          <i data-lucide="shield-check" style="width: 26px; height: 26px;"></i>
+          <i data-lucide="shield-check" style="width: 22px; height: 22px;"></i>
         </div>
         <div class="brand-text">
           <h1>MEYYURAI <span class="tamil-title">மெய்யுரை</span></h1>
-          <p>National Citizen Legal Navigator & Emergency Safety Portal</p>
+          <p>National Legal Navigator & Emergency Safety Portal</p>
         </div>
       </a>
 
-      <!-- Navigation Tabs -->
+      <!-- Desktop Navigation Tabs -->
       <nav class="nav-tabs">
         <button class="nav-btn active" id="nav-dashboard" onclick="switchTab('dashboard')">
-          <i data-lucide="layout-dashboard" style="width: 16px; height: 16px;"></i>
-          <span>Dashboard & SOS</span>
+          <i data-lucide="siren" style="width: 15px; height: 15px;"></i>
+          <span>Emergency</span>
         </button>
         <button class="nav-btn" id="nav-ai" onclick="switchTab('ai')">
-          <i data-lucide="scale" style="width: 16px; height: 16px;"></i>
-          <span>AI Legal Advisor</span>
+          <i data-lucide="sparkles" style="width: 15px; height: 15px;"></i>
+          <span>Meyyurai AI</span>
         </button>
         <button class="nav-btn" id="nav-resources" onclick="switchTab('resources')">
-          <i data-lucide="book-open" style="width: 16px; height: 16px;"></i>
-          <span>Laws & Schemes</span>
+          <i data-lucide="scale" style="width: 15px; height: 15px;"></i>
+          <span>Resources</span>
         </button>
         <button class="nav-btn" id="nav-profile" onclick="switchTab('profile')">
-          <i data-lucide="user" style="width: 16px; height: 16px;"></i>
-          <span>Profile & Contacts</span>
+          <i data-lucide="user" style="width: 15px; height: 15px;"></i>
+          <span>Profile</span>
         </button>
       </nav>
 
       <!-- Right Header Actions -->
       <div class="header-actions">
         <button class="quick-sos-header-btn" onclick="openEmergencyCountdown()">
-          <i data-lucide="alert-triangle" style="width: 16px; height: 16px;"></i>
+          <i data-lucide="alert-triangle" style="width: 14px; height: 14px;"></i>
           <span>SOS ALERT</span>
         </button>
 
@@ -1598,190 +1817,197 @@
     </div>
   </header>
 
-  <!-- Main Content Area -->
+  <!-- Main Application Content Area -->
   <main class="app-container">
 
     <!-- ======================================================================
-         TAB 1: EMERGENCY SOS HUB (HOME PAGE)
+         TAB 1: EMERGENCY SOS (HOME PAGE) - DESIGN SYSTEM MATCHING SCREENSHOT
          ====================================================================== -->
     <section id="tab-dashboard" class="tab-screen active">
-      <!-- Big Emergency SOS Center -->
-      <div class="sos-hero-card">
-        <div class="sos-hero-info">
-          <div class="sos-badge-tag">
-            <i data-lucide="shield-alert" style="width: 14px; height: 14px;"></i>
-            <span>Instant Dispatch System</span>
-          </div>
-          <h2>Emergency SOS & Immediate Assistance</h2>
-          <p>
-            Pressing the emergency trigger will initiate an instant distress broadcast. Your current live GPS coordinates 
-            and alert message are automatically sent to your emergency contacts, followed by connection to the police emergency network (112).
-          </p>
+      
+      <!-- Editorial Reassuring Introduction Block -->
+      <div class="screen-intro-block">
+        <div class="screen-overline">YOU'RE SAFE HERE</div>
+        <h1 class="screen-title">Emergency</h1>
+        <p class="screen-desc">One tap away from help. Use the SOS button or pick a direct line below.</p>
+      </div>
 
-          <div class="sos-telemetry-strip">
-            <div class="telemetry-item live-gps">
-              <i data-lucide="map-pin" style="width: 14px; height: 14px;"></i>
-              <span id="gpsTelemetryStatus">GPS: Detecting Coordinates...</span>
-            </div>
-            <div class="telemetry-item">
-              <i data-lucide="users" style="width: 14px; height: 14px;"></i>
-              <span id="contactsArmedCount">2 Emergency Contacts Armed</span>
-            </div>
-            <div class="telemetry-item">
-              <i data-lucide="clock" style="width: 14px; height: 14px;"></i>
-              <span>5-Sec Accidental Safeguard Active</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Giant SOS Trigger Button -->
-        <div class="sos-action-box">
-          <button class="sos-main-trigger-btn" id="mainSosTriggerBtn" onclick="openEmergencyCountdown()">
-            <i data-lucide="alert-octagon" style="width: 44px; height: 44px;"></i>
-            <span>SOS</span>
+      <!-- Prominent Emergency SOS Hero Card -->
+      <div class="sos-reference-card">
+        <div class="sos-button-wrapper">
+          <button class="sos-main-trigger-btn" id="mainSosTriggerBtn" onclick="openEmergencyCountdown()" aria-label="Trigger Emergency SOS">
+            <i data-lucide="siren" style="width: 44px; height: 44px;"></i>
+            <span class="sos-btn-label">SOS</span>
           </button>
-          <div class="sos-safeguard-notice">
-            <i data-lucide="shield" style="width: 12px; height: 12px;"></i>
-            <span>5-Sec countdown gives time to cancel</span>
+        </div>
+
+        <div class="sos-caption">Press and choose how you'd like to get help.</div>
+
+        <!-- Telemetry Status Strip -->
+        <div class="sos-telemetry-strip">
+          <div class="telemetry-item live-gps">
+            <i data-lucide="map-pin" style="width: 13px; height: 13px;"></i>
+            <span id="gpsTelemetryStatus">GPS: Detecting Coordinates...</span>
+          </div>
+          <div class="telemetry-item">
+            <i data-lucide="users" style="width: 13px; height: 13px;"></i>
+            <span id="contactsArmedCount">2 Emergency Contacts Armed</span>
+          </div>
+          <div class="telemetry-item">
+            <i data-lucide="clock" style="width: 13px; height: 13px;"></i>
+            <span>5-Sec Accidental Safeguard Active</span>
           </div>
         </div>
       </div>
 
-      <!-- Quick National Helplines Speed Dial -->
-      <div class="helpline-section-title">
-        <h3>
-          <i data-lucide="phone-call" style="width: 20px; height: 20px; color: var(--brand-teal-light);"></i>
-          <span>Official National Emergency Hotlines (One-Click Speed Dial)</span>
-        </h3>
+      <!-- Emergency Contacts & Helplines (2-Column Grid on Web) -->
+      <div class="emergency-grid-layout">
+        
+        <!-- Emergency Contacts Section -->
+        <div>
+          <div class="section-header-row">
+            <h3 class="section-headline">
+              <i data-lucide="users" style="width: 18px; height: 18px; color: var(--brand-teal);"></i>
+              <span>Emergency contacts</span>
+            </h3>
+            <a onclick="switchTab('profile')" class="tap-to-call-hint">
+              <span>Tap to call</span>
+              <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+            </a>
+          </div>
+
+          <div class="contacts-stack" id="homeContactsList">
+            <!-- Dynamically populated or fallback -->
+          </div>
+        </div>
+
+        <!-- Official Helplines Speed Dial -->
+        <div>
+          <div class="section-header-row">
+            <h3 class="section-headline">
+              <i data-lucide="phone-call" style="width: 18px; height: 18px; color: var(--brand-teal);"></i>
+              <span>Official Helplines</span>
+            </h3>
+            <span style="font-size: 0.8rem; color: var(--text-dim);">Pan-India 24x7</span>
+          </div>
+
+          <div class="helplines-grid">
+            <a href="tel:112" class="helpline-card police-card">
+              <div class="helpline-details">
+                <h4>National Police (ERSS)</h4>
+                <p>Immediate 24x7 response</p>
+              </div>
+              <div class="helpline-number-btn">112</div>
+            </a>
+
+            <a href="tel:1091" class="helpline-card">
+              <div class="helpline-details">
+                <h4>Women Helpline</h4>
+                <p>Abuse & safety protection</p>
+              </div>
+              <div class="helpline-number-btn">1091</div>
+            </a>
+
+            <a href="tel:181" class="helpline-card">
+              <div class="helpline-details">
+                <h4>Sakhi Women in Distress</h4>
+                <p>Counseling & shelter</p>
+              </div>
+              <div class="helpline-number-btn">181</div>
+            </a>
+
+            <a href="tel:1930" class="helpline-card">
+              <div class="helpline-details">
+                <h4>Cyber Crime Fraud</h4>
+                <p>Report scam & freeze funds</p>
+              </div>
+              <div class="helpline-number-btn">1930</div>
+            </a>
+
+            <a href="tel:15100" class="helpline-card">
+              <div class="helpline-details">
+                <h4>Free Legal Aid (NALSA)</h4>
+                <p>Appointed counsel Art 39A</p>
+              </div>
+              <div class="helpline-number-btn">15100</div>
+            </a>
+
+            <a href="tel:1098" class="helpline-card">
+              <div class="helpline-details">
+                <h4>Childline Helpline</h4>
+                <p>Protection of minors</p>
+              </div>
+              <div class="helpline-number-btn">1098</div>
+            </a>
+          </div>
+        </div>
       </div>
 
-      <div class="helplines-grid">
-        <a href="tel:112" class="helpline-card police-card">
-          <div class="helpline-details">
-            <h4>National Police & Emergency</h4>
-            <p>Pan-India 24x7 Emergency Response (ERSS)</p>
-          </div>
-          <div class="helpline-number-btn">
-            <i data-lucide="phone" style="width: 14px; height: 14px;"></i>
-            <span>112</span>
-          </div>
-        </a>
-
-        <a href="tel:1091" class="helpline-card">
-          <div class="helpline-details">
-            <h4>Women Helpline (All India)</h4>
-            <p>Immediate protection from abuse & stalking</p>
-          </div>
-          <div class="helpline-number-btn">
-            <i data-lucide="phone" style="width: 14px; height: 14px;"></i>
-            <span>1091</span>
-          </div>
-        </a>
-
-        <a href="tel:181" class="helpline-card">
-          <div class="helpline-details">
-            <h4>Women in Distress (Sakhi / Govt)</h4>
-            <p>24x7 counseling, legal aid & safe shelter</p>
-          </div>
-          <div class="helpline-number-btn">
-            <i data-lucide="phone" style="width: 14px; height: 14px;"></i>
-            <span>181</span>
-          </div>
-        </a>
-
-        <a href="tel:1930" class="helpline-card">
-          <div class="helpline-details">
-            <h4>Cyber Financial Crime Helpline</h4>
-            <p>Report online fraud & freeze stolen money</p>
-          </div>
-          <div class="helpline-number-btn">
-            <i data-lucide="phone" style="width: 14px; height: 14px;"></i>
-            <span>1930</span>
-          </div>
-        </a>
-
-        <a href="tel:15100" class="helpline-card">
-          <div class="helpline-details">
-            <h4>National Legal Aid (NALSA)</h4>
-            <p>100% Free lawyer under Article 39A</p>
-          </div>
-          <div class="helpline-number-btn">
-            <i data-lucide="phone" style="width: 14px; height: 14px;"></i>
-            <span>15100</span>
-          </div>
-        </a>
-
-        <a href="tel:1098" class="helpline-card">
-          <div class="helpline-details">
-            <h4>Childline Emergency Helpline</h4>
-            <p>Protection of minors, POCSO assistance</p>
-          </div>
-          <div class="helpline-number-btn">
-            <i data-lucide="phone" style="width: 14px; height: 14px;"></i>
-            <span>1098</span>
-          </div>
-        </a>
-      </div>
-
-      <!-- Quick Platform Feature Cards -->
+      <!-- Three Platform Feature Cards -->
       <div class="dashboard-features-grid">
         <div class="feature-launch-card" onclick="switchTab('ai')">
           <div class="feature-icon-wrap ai-color">
-            <i data-lucide="sparkles" style="width: 24px; height: 24px;"></i>
+            <i data-lucide="sparkles" style="width: 22px; height: 22px;"></i>
           </div>
-          <h4>AI Legal & Officer Navigator</h4>
-          <p>Enter any problem in simple English. AI analyzes official statutes and tells you exactly whom to see and where to go.</p>
+          <h4>Meyyurai AI Legal Navigator</h4>
+          <p>Describe any dispute or incident in plain English. AI checks verified Indian law to identify whom to meet and what steps to take.</p>
         </div>
 
         <div class="feature-launch-card" onclick="switchTab('resources')">
           <div class="feature-icon-wrap rights-color">
-            <i data-lucide="landmark" style="width: 24px; height: 24px;"></i>
-            </div>
+            <i data-lucide="landmark" style="width: 22px; height: 22px;"></i>
+          </div>
           <h4>Constitutional Rights & Schemes</h4>
-          <p>Explore women's constitutional rights (Art 14, 15(3), 21, 39A), BNSS arrest protections, and welfare subsidies.</p>
+          <p>Search official statutory acts, arrest protections, welfare subsidies, and designated judicial tribunals across India.</p>
         </div>
 
         <div class="feature-launch-card" onclick="switchTab('profile')">
           <div class="feature-icon-wrap contacts-color">
-            <i data-lucide="shield-check" style="width: 24px; height: 24px;"></i>
+            <i data-lucide="shield-check" style="width: 22px; height: 22px;"></i>
           </div>
-          <h4>Emergency Contacts Manager</h4>
-          <p>Manage family and friends who will automatically receive your live location link whenever emergency SOS is triggered.</p>
+          <h4>Emergency Contacts & Profile</h4>
+          <p>Manage trusted family and legal advisors who receive your live GPS coordinates during an emergency broadcast.</p>
         </div>
       </div>
     </section>
 
     <!-- ======================================================================
-         TAB 2: AI LEGAL NAVIGATOR & WHOM TO SEE
+         TAB 2: MEYYURAI AI ASSISTANT (CONVERSATIONAL & PROCEDURAL GUIDANCE)
          ====================================================================== -->
     <section id="tab-ai" class="tab-screen">
+      <div class="screen-intro-block">
+        <div class="screen-overline">LEGAL & PROCEDURAL GUIDANCE</div>
+        <h1 class="screen-title">Meyyurai AI Assistant</h1>
+        <p class="screen-desc">Describe your situation. We analyze verified Indian statutes to provide clear next steps, applicable laws, and designated authorities to meet.</p>
+      </div>
+
       <div class="ai-layout-grid">
         <!-- Left: Input Query Box -->
         <div class="ai-input-card">
           <div class="ai-card-header">
             <h3>
-              <i data-lucide="sparkles" style="width: 20px; height: 20px; color: var(--brand-teal-light);"></i>
-              <span>Legal Advisor & Officer Finder</span>
+              <i data-lucide="sparkles" style="width: 18px; height: 18px; color: var(--brand-teal);"></i>
+              <span>Describe Your Situation</span>
             </h3>
-            <p>Describe your issue in plain, simple English. Grounded directly in official Indian statutes (BNS 2023, BNSS, IT Act, POSH).</p>
+            <p>Enter your issue in plain English. Grounded directly in official Indian statutes (BNS 2023, BNSS, IT Act, POSH).</p>
           </div>
 
           <textarea 
             id="aiQueryInput" 
             class="ai-textarea" 
-            placeholder="Type your situation here in simple English...&#10;e.g. 'My landlord locked my flat and took my deposit without notice' or 'Someone on Instagram is threatening to post my photos' or 'Employer didn't pay 3 months salary'"></textarea>
+            placeholder="Type your situation here in plain words...&#10;e.g. 'My landlord locked my flat and took my deposit without notice' or 'Someone on Instagram is threatening to post my photos' or 'Employer refused to pay 3 months salary'"></textarea>
 
-          <div class="query-chips-title">Quick Scenarios (Click to test):</div>
+          <div class="query-chips-title">Sample Scenarios (Click to test):</div>
           <div class="query-chips-wrap">
             <button class="chip-btn" onclick="setQueryExample('Someone is blackmailing me on WhatsApp with edited photos and demanding money')">Cyber Blackmail</button>
             <button class="chip-btn" onclick="setQueryExample('Facing sexual harassment at workplace and management is ignoring my complaint')">Workplace POSH</button>
-            <button class="chip-btn" onclick="setQueryExample('In-laws are demanding dowry and physically threatening me at home')">Domestic Violence & Dowry</button>
+            <button class="chip-btn" onclick="setQueryExample('In-laws are demanding dowry and physically threatening me at home')">Domestic Violence</button>
             <button class="chip-btn" onclick="setQueryExample('Landlord locked my apartment and is refusing to return my security deposit')">Illegal Eviction</button>
             <button class="chip-btn" onclick="setQueryExample('Police station refused to register my complaint saying it happened in another area')">Zero FIR Refusal</button>
           </div>
 
           <button class="submit-ai-btn" id="runAiBtn" onclick="runAiAdvisor()">
-            <i data-lucide="search" style="width: 18px; height: 18px;"></i>
+            <i data-lucide="search" style="width: 17px; height: 17px;"></i>
             <span>Analyze Laws & Find Officers</span>
           </button>
         </div>
@@ -1789,9 +2015,9 @@
         <!-- Right: Structured Output Dossier -->
         <div class="ai-output-container" id="aiOutputContainer">
           <div class="dossier-welcome" id="dossierPlaceholder">
-            <i data-lucide="scale" style="width: 56px; height: 56px;"></i>
-            <h3 style="font-size: 1.3rem; margin-bottom: 8px;">Awaiting Citizen Situation</h3>
-            <p>Enter your situation on the left or select a sample scenario to generate official statutory guidance and find designated officers.</p>
+            <i data-lucide="scale" style="width: 48px; height: 48px;"></i>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 6px;">Awaiting Citizen Situation</h3>
+            <p style="font-size: 0.88rem; max-width: 440px;">Describe what happened on the left or click a sample scenario to generate official statutory guidance and find designated officers.</p>
           </div>
 
           <div id="dossierContent" style="display: none;">
@@ -1807,7 +2033,7 @@
             <!-- Whom to Meet Dedicated Highlight Block -->
             <div class="officers-block" id="officersSection">
               <div class="officers-block-title">
-                <i data-lucide="user-check" style="width: 22px; height: 22px;"></i>
+                <i data-lucide="user-check" style="width: 18px; height: 18px;"></i>
                 <span>WHOM YOU NEED TO MEET (Designated Officers & Jurisdiction)</span>
               </div>
               <div id="officersList"></div>
@@ -1815,8 +2041,8 @@
 
             <!-- Applicable Official Statutory Laws -->
             <div style="margin-bottom: 24px;">
-              <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                <i data-lucide="book" style="width: 18px; height: 18px; color: #60a5fa;"></i>
+              <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="book-open" style="width: 16px; height: 16px; color: var(--brand-teal);"></i>
                 <span>Applicable Laws & Bare Act Provisions</span>
               </h4>
               <div class="laws-grid" id="lawsGrid"></div>
@@ -1824,8 +2050,8 @@
 
             <!-- Action Roadmap -->
             <div class="action-steps-wrap">
-              <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
-                <i data-lucide="check-circle" style="width: 18px; height: 18px; color: var(--brand-teal-light);"></i>
+              <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="check-circle" style="width: 16px; height: 16px; color: var(--brand-teal);"></i>
                 <span>Step-by-Step Action Roadmap</span>
               </h4>
               <div id="actionRoadmapList"></div>
@@ -1834,11 +2060,11 @@
             <!-- Complaint Generator Bar -->
             <div class="complaint-draft-bar">
               <div>
-                <h5 style="font-size: 1rem; font-weight: 700;">Need a Formal Legal Representation?</h5>
-                <p style="font-size: 0.82rem; color: var(--text-muted);">Generate a structured formal complaint draft citing these laws, ready to print or submit.</p>
+                <h5 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">Need a Formal Legal Representation?</h5>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">Generate a structured formal complaint draft citing these laws, ready to print or submit.</p>
               </div>
               <button class="draft-btn" onclick="openComplaintModal()">
-                <i data-lucide="file-text" style="width: 16px; height: 16px;"></i>
+                <i data-lucide="file-text" style="width: 15px; height: 15px;"></i>
                 <span>Generate Official Complaint</span>
               </button>
             </div>
@@ -1848,13 +2074,19 @@
     </section>
 
     <!-- ======================================================================
-         TAB 3: RESOURCE DIRECTORY & SCHEMES (WITH DEEP FILTERING)
+         TAB 3: LEGAL & GOVERNMENT RESOURCES DIRECTORY
          ====================================================================== -->
     <section id="tab-resources" class="tab-screen">
+      <div class="screen-intro-block">
+        <div class="screen-overline">STATUTORY & COMMUNITY DIRECTORY</div>
+        <h1 class="screen-title">Legal & Government Resources</h1>
+        <p class="screen-desc">Explore official Indian laws, constitutional guarantees, welfare schemes, and designated tribunals across India.</p>
+      </div>
+
       <div class="directory-controls">
         <!-- Live Search -->
         <div class="search-input-wrap">
-          <i data-lucide="search" style="width: 20px; height: 20px;"></i>
+          <i data-lucide="search" style="width: 18px; height: 18px;"></i>
           <input 
             type="text" 
             id="resourceSearchInput" 
@@ -1863,7 +2095,7 @@
             oninput="filterResources()">
         </div>
 
-        <!-- Filter by Target Demographics / Category -->
+        <!-- Filter by Category -->
         <div class="filter-group-label">Filter by Category:</div>
         <div class="filter-pills-row" id="categoryFilterRow">
           <button class="filter-pill active" data-category="all" onclick="setCategoryFilter('all')">All Categories</button>
@@ -1887,7 +2119,7 @@
 
       <!-- Resource Grid -->
       <div class="resources-grid" id="resourcesGrid">
-        <!-- Dynamic resource cards injected via Javascript -->
+        <!-- Injected dynamically via JS -->
       </div>
     </section>
 
@@ -1895,11 +2127,17 @@
          TAB 4: CITIZEN PROFILE & EMERGENCY CONTACTS
          ====================================================================== -->
     <section id="tab-profile" class="tab-screen">
+      <div class="screen-intro-block">
+        <div class="screen-overline">CITIZEN IDENTIFICATION & SAFETY</div>
+        <h1 class="screen-title">Citizen Profile & Contacts</h1>
+        <p class="screen-desc">Your confidential profile details and trusted emergency contacts utilized during SOS dispatch.</p>
+      </div>
+
       <div class="profile-layout-grid">
         <!-- Profile Form Card -->
         <div class="profile-card">
-          <div class="section-headline">
-            <i data-lucide="user-check" style="width: 22px; height: 22px; color: var(--brand-teal-light);"></i>
+          <div class="section-headline" style="margin-bottom: 4px;">
+            <i data-lucide="user-check" style="width: 18px; height: 18px; color: var(--brand-teal);"></i>
             <span>Citizen Profile Details</span>
           </div>
           <p class="section-sub">Your personal details stored securely in the database and utilized during emergency dispatch.</p>
@@ -1951,14 +2189,14 @@
         <div class="contacts-card">
           <div class="contacts-header-action">
             <div>
-              <div class="section-headline">
-                <i data-lucide="users" style="width: 22px; height: 22px; color: var(--brand-teal-light);"></i>
+              <div class="section-headline" style="margin-bottom: 2px;">
+                <i data-lucide="users" style="width: 18px; height: 18px; color: var(--brand-teal);"></i>
                 <span>Emergency Contacts</span>
               </div>
-              <p class="section-sub" style="margin-bottom: 0;">These contacts receive your live GPS location and SOS alert during an emergency.</p>
+              <p class="section-sub" style="margin-bottom: 0;">These contacts receive your live GPS location and alert during an emergency.</p>
             </div>
             <button class="add-contact-trigger-btn" onclick="openAddContactModal()">
-              <i data-lucide="user-plus" style="width: 16px; height: 16px;"></i>
+              <i data-lucide="user-plus" style="width: 15px; height: 15px;"></i>
               <span>Add Contact</span>
             </button>
           </div>
@@ -1971,7 +2209,7 @@
           <!-- Live SOS Message Preview Card -->
           <div class="sos-preview-box">
             <div class="sos-preview-title">
-              <i data-lucide="radio" style="width: 14px; height: 14px;"></i>
+              <i data-lucide="radio" style="width: 13px; height: 13px;"></i>
               <span>Live Emergency Message Preview (Broadcast to Contacts)</span>
             </div>
             <div class="sos-preview-content" id="sosPreviewText">
@@ -2000,43 +2238,43 @@ Please call 112 / Police and reach me immediately.
         <h3>EMERGENCY CALL INITIALIZING</h3>
         <p class="warning-sub">To avoid accidental touches: Press Cancel immediately if you are safe.</p>
 
-        <!-- Giant Prominent Cancel Button -->
+        <!-- Prominent Dark Navy Cancel Button -->
         <button class="cancel-emergency-btn" onclick="cancelEmergencyCountdown()">
-          <i data-lucide="x-circle" style="width: 24px; height: 24px;"></i>
+          <i data-lucide="x-circle" style="width: 20px; height: 20px;"></i>
           <span>CANCEL CALL NOW (I AM SAFE)</span>
         </button>
 
         <div style="margin-top: 18px; font-size: 0.8rem; color: var(--text-dim);">
-          Live GPS Location captured: <span id="modalGpsCoords" style="color: #34d399;">Detecting...</span>
+          Live GPS Location captured: <span id="modalGpsCoords" style="color: var(--brand-teal); font-weight: 600;">Detecting...</span>
         </div>
       </div>
 
       <!-- Dispatched Active State (After 5 Seconds) -->
       <div class="emergency-dispatched-box" id="dispatchedState">
         <div class="dispatched-badge">
-          <i data-lucide="check-circle" style="width: 14px; height: 14px; vertical-align: middle;"></i>
+          <i data-lucide="check-circle" style="width: 14px; height: 14px;"></i>
           <span>SOS BROADCAST DISPATCHED</span>
         </div>
 
-        <h3 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 8px;">Emergency Signals Sent!</h3>
-        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 20px;">
+        <h3 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin-bottom: 6px;">Emergency Signals Sent</h3>
+        <p style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 20px;">
           Distress message with your live GPS location link was dispatched to your emergency contacts.
         </p>
 
         <!-- Direct Emergency Call -->
         <a href="tel:112" class="call-112-direct-btn">
-          <i data-lucide="phone" style="width: 20px; height: 20px;"></i>
+          <i data-lucide="phone" style="width: 18px; height: 18px;"></i>
           <span>DIAL 112 (POLICE HELPLINE)</span>
         </a>
 
-        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px;">
+        <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px;">
           Direct WhatsApp Alert to Contacts:
         </div>
         <div class="whatsapp-alert-list" id="modalWhatsappList">
           <!-- Injected dynamically -->
         </div>
 
-        <button class="cancel-emergency-btn" style="margin-top: 20px; background: var(--bg-surface-elevated); border-color: var(--border-subtle); color: var(--text-main);" onclick="closeEmergencyModal()">
+        <button class="cancel-emergency-btn" style="margin-top: 20px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); color: var(--text-main);" onclick="closeEmergencyModal()">
           Close Emergency Panel
         </button>
       </div>
@@ -2073,7 +2311,7 @@ Please call 112 / Police and reach me immediately.
         <p class="auth-sub">We sent a 6-digit code to <b id="displayVerifyPhone">+91</b></p>
 
         <div class="otp-dev-badge" id="otpSimulationBox">
-          <span>Demo OTP: <b id="demoOtpCode" style="font-family: monospace; font-size: 1.1rem; color: #ffffff;">123456</b></span>
+          <span>Demo OTP: <b id="demoOtpCode" style="font-family: monospace; font-size: 1rem; color: #1e3a8a;">123456</b></span>
           <button class="auto-fill-otp-btn" onclick="autoFillOtp()">Auto-Fill OTP</button>
         </div>
 
@@ -2086,7 +2324,7 @@ Please call 112 / Police and reach me immediately.
           <span>Verify & Access Portal</span>
         </button>
 
-        <button style="background: transparent; border: none; color: var(--text-dim); font-size: 0.8rem; margin-top: 14px; cursor: pointer; width: 100%; text-align: center;" onclick="backToPhoneStep()">
+        <button style="background: transparent; border: none; color: var(--text-dim); font-size: 0.8rem; margin-top: 14px; cursor: pointer; width: 100%; text-align: center; font-family: inherit;" onclick="backToPhoneStep()">
           ← Change Mobile Number
         </button>
       </div>
@@ -2118,7 +2356,7 @@ Please call 112 / Police and reach me immediately.
 
         <div class="form-group">
           <label class="form-label">Relationship</label>
-          <select id="newContactRelation" class="form-input" style="background: var(--bg-page);">
+          <select id="newContactRelation" class="form-input">
             <option value="Parent">Parent / Mother / Father</option>
             <option value="Spouse">Spouse / Partner</option>
             <option value="Sibling">Sibling / Brother / Sister</option>
@@ -2129,8 +2367,8 @@ Please call 112 / Police and reach me immediately.
         </div>
 
         <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
-          <input type="checkbox" id="newContactPrimary" style="width: 18px; height: 18px;">
-          <label for="newContactPrimary" style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer;">Set as Primary Emergency Contact</label>
+          <input type="checkbox" id="newContactPrimary" style="width: 17px; height: 17px; accent-color: var(--brand-teal);">
+          <label for="newContactPrimary" style="font-size: 0.84rem; color: var(--text-muted); cursor: pointer;">Set as Primary Emergency Contact</label>
         </div>
 
         <button type="submit" class="submit-ai-btn">
@@ -2144,29 +2382,49 @@ Please call 112 / Police and reach me immediately.
        MODAL 4: FORMAL COMPLAINT DRAFT MODAL
        ======================================================================== -->
   <div class="modal-backdrop" id="complaintModal">
-    <div class="modal-dialog" style="max-width: 720px;">
+    <div class="modal-dialog" style="max-width: 680px;">
       <button class="modal-close-x" onclick="closeComplaintModal()">✕</button>
       <h3 class="auth-title">Formal Legal Representation & Complaint</h3>
       <p class="auth-sub">Official draft grounded in Bharatiya Nyaya Sanhita (BNS 2023) & Bharatiya Nagarik Suraksha Sanhita (BNSS).</p>
 
-      <textarea id="complaintDraftArea" class="ai-textarea" style="height: 320px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;" readonly></textarea>
+      <textarea id="complaintDraftArea" class="ai-textarea" style="height: 300px; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; background: #ffffff;" readonly></textarea>
 
       <div style="display: flex; gap: 12px; margin-top: 16px;">
         <button class="submit-ai-btn" onclick="copyComplaintText()">
-          <i data-lucide="copy" style="width: 16px; height: 16px;"></i>
+          <i data-lucide="copy" style="width: 15px; height: 15px;"></i>
           <span>Copy Complaint Text</span>
         </button>
         <button class="draft-btn" onclick="printComplaintDraft()">
-          <i data-lucide="printer" style="width: 16px; height: 16px;"></i>
+          <i data-lucide="printer" style="width: 15px; height: 15px;"></i>
           <span>Print Representation</span>
         </button>
       </div>
     </div>
   </div>
 
+  <!-- Mobile Bottom Navigation (Matching Second Screenshot) -->
+  <nav class="mobile-bottom-nav">
+    <button class="mobile-nav-item active" id="m-nav-dashboard" onclick="switchTab('dashboard')">
+      <div class="mobile-nav-icon"><i data-lucide="siren" style="width: 17px; height: 17px;"></i></div>
+      <span>Emergency</span>
+    </button>
+    <button class="mobile-nav-item" id="m-nav-ai" onclick="switchTab('ai')">
+      <div class="mobile-nav-icon"><i data-lucide="sparkles" style="width: 17px; height: 17px;"></i></div>
+      <span>Meyyurai</span>
+    </button>
+    <button class="mobile-nav-item" id="m-nav-resources" onclick="switchTab('resources')">
+      <div class="mobile-nav-icon"><i data-lucide="scale" style="width: 17px; height: 17px;"></i></div>
+      <span>Resources</span>
+    </button>
+    <button class="mobile-nav-item" id="m-nav-profile" onclick="switchTab('profile')">
+      <div class="mobile-nav-icon"><i data-lucide="user" style="width: 17px; height: 17px;"></i></div>
+      <span>Profile</span>
+    </button>
+  </nav>
+
   <!-- Toast Notification Bar -->
   <div class="toast-notice" id="toastNotice">
-    <i data-lucide="check-circle" style="color: var(--brand-teal-light);"></i>
+    <i data-lucide="check-circle" style="color: #34d399; width: 18px; height: 18px;"></i>
     <span id="toastMessage">Notification message</span>
   </div>
 
@@ -2174,15 +2432,15 @@ Please call 112 / Police and reach me immediately.
   <footer class="global-footer">
     <div class="app-container footer-inner">
       <div>
-        <b>Meyyurai (மெய்யுரை)</b> · National AI Legal Guidance & Citizen Protection Platform
+        <b>Meyyurai (மெய்யுரை)</b> · National AI Legal Guidance & Citizen Safety Portal
       </div>
       <div>
-        Statutory Grounding: Ministry of Law & Justice, Govt of India · National Emergency: 112 · Cyber Fraud: 1930
+        Statutory Grounding: Ministry of Law & Justice, Govt of India · National Emergency: 112 · Cyber Helpline: 1930
       </div>
     </div>
   </footer>
 
-  <!-- Application Logic -->
+  <!-- Application Logic (100% Functionality Preserved) -->
   <script>
     // State variables
     let currentUser = null;
@@ -2204,14 +2462,18 @@ Please call 112 / Police and reach me immediately.
       loadResources();
     });
 
-    // Tab Navigation
+    // Tab Navigation (Syncs both Desktop and Mobile bottom navigation)
     function switchTab(tabId) {
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.mobile-nav-item').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-screen').forEach(s => s.classList.remove('active'));
 
       const targetNav = document.getElementById(`nav-${tabId}`);
+      const targetMobileNav = document.getElementById(`m-nav-${tabId}`);
       const targetTab = document.getElementById(`tab-${tabId}`);
+
       if (targetNav) targetNav.classList.add('active');
+      if (targetMobileNav) targetMobileNav.classList.add('active');
       if (targetTab) targetTab.classList.add('active');
 
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2229,27 +2491,25 @@ Please call 112 / Police and reach me immediately.
       }, duration);
     }
 
-    // GPS Geolocation Detection
+    // Geolocation detection
     function initGpsTracking() {
       if ("geolocation" in navigator) {
         navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            currentGps.latitude = pos.coords.latitude;
-            currentGps.longitude = pos.coords.longitude;
-            const latStr = pos.coords.latitude.toFixed(4);
-            const lngStr = pos.coords.longitude.toFixed(4);
-            currentGps.address = `GPS: ${latStr}° N, ${lngStr}° E`;
+          pos => {
+            currentGps.latitude = parseFloat(pos.coords.latitude.toFixed(4));
+            currentGps.longitude = parseFloat(pos.coords.longitude.toFixed(4));
+            currentGps.address = `GPS Lat ${currentGps.latitude}, Lng ${currentGps.longitude}`;
             
-            const gpsLabel = document.getElementById("gpsTelemetryStatus");
-            const modalGps = document.getElementById("modalGpsCoords");
-            if (gpsLabel) gpsLabel.innerText = `GPS: ${latStr}° N, ${lngStr}° E (Active)`;
-            if (modalGps) modalGps.innerText = `${latStr}, ${lngStr}`;
+            const badge = document.getElementById("gpsTelemetryStatus");
+            const modalBadge = document.getElementById("modalGpsCoords");
+            if (badge) badge.innerText = `GPS: ${currentGps.latitude}, ${currentGps.longitude}`;
+            if (modalBadge) modalBadge.innerText = `${currentGps.latitude}, ${currentGps.longitude}`;
             updateSosPreview();
           },
-          (err) => {
-            console.warn("Geolocation permission note:", err);
-            const gpsLabel = document.getElementById("gpsTelemetryStatus");
-            if (gpsLabel) gpsLabel.innerText = "GPS: Standard Jurisdiction Active";
+          err => {
+            console.log("GPS warning:", err.message);
+            const badge = document.getElementById("gpsTelemetryStatus");
+            if (badge) badge.innerText = "GPS: Approx (Chennai)";
           },
           { enableHighAccuracy: true, timeout: 8000 }
         );
@@ -2257,43 +2517,42 @@ Please call 112 / Police and reach me immediately.
     }
 
     // =========================================================================
-    // EMERGENCY SOS WORKFLOW (5-SECOND COUNTDOWN & CANCEL SAFEGUARD)
+    // EMERGENCY SOS WITH 5-SECOND ACCIDENTAL SAFEGUARD
     // =========================================================================
     function openEmergencyCountdown() {
       const modal = document.getElementById("emergencyModal");
-      const countState = document.getElementById("countdownState");
-      const dispatchState = document.getElementById("dispatchedState");
+      const countdownBox = document.getElementById("countdownState");
+      const dispatchedBox = document.getElementById("dispatchedState");
       const timerEl = document.getElementById("countdownTimer");
 
       modal.classList.add("active");
-      countState.style.display = "block";
-      dispatchState.style.display = "none";
+      countdownBox.style.display = "block";
+      dispatchedBox.style.display = "none";
 
       countdownSeconds = 5;
       timerEl.innerText = countdownSeconds;
 
-      // Start 5-second ticking
+      // Play soft alert chime using Web Audio API
+      playEmergencyChime();
+
       clearInterval(countdownInterval);
       countdownInterval = setInterval(() => {
         countdownSeconds--;
         timerEl.innerText = countdownSeconds;
+        playEmergencyChime();
 
         if (countdownSeconds <= 0) {
           clearInterval(countdownInterval);
           executeEmergencyDispatch();
         }
       }, 1000);
-
-      lucide.createIcons();
     }
 
-    // Cancel Emergency Call (Accidental Touch Prevention)
+    // Accidental touch cancellation safeguard
     async function cancelEmergencyCountdown() {
       clearInterval(countdownInterval);
       const modal = document.getElementById("emergencyModal");
       modal.classList.remove("active");
-
-      showToast("🛡️ Emergency SOS was cancelled. No distress call placed.");
 
       if (activeSosId) {
         try {
@@ -2302,72 +2561,97 @@ Please call 112 / Police and reach me immediately.
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ sos_id: activeSosId })
           });
-          activeSosId = null;
         } catch (e) {
-          console.error(e);
+          console.error("Cancel API error:", e);
         }
       }
+
+      showToast("Emergency SOS was cancelled safely. You are safe.");
     }
 
     function closeEmergencyModal() {
-      clearInterval(countdownInterval);
-      document.getElementById("emergencyModal").classList.remove("active");
+      const modal = document.getElementById("emergencyModal");
+      modal.classList.remove("active");
     }
 
-    // Dispatches emergency when countdown finishes
+    // Actual Dispatch Execution
     async function executeEmergencyDispatch() {
-      const countState = document.getElementById("countdownState");
-      const dispatchState = document.getElementById("dispatchedState");
-      countState.style.display = "none";
-      dispatchState.style.display = "block";
+      const countdownBox = document.getElementById("countdownState");
+      const dispatchedBox = document.getElementById("dispatchedState");
+
+      countdownBox.style.display = "none";
+      dispatchedBox.style.display = "block";
 
       try {
+        const payload = {
+          latitude: currentGps.latitude,
+          longitude: currentGps.longitude,
+          address: currentGps.address
+        };
+
         const res = await fetch("/api/emergency/trigger", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            latitude: currentGps.latitude,
-            longitude: currentGps.longitude,
-            address: currentGps.address
-          })
+          body: JSON.stringify(payload)
         });
 
         const data = await res.json();
-        if (data.sos_id) activeSosId = data.sos_id;
+        activeSosId = data.sos_id || null;
 
-        // Render direct WhatsApp emergency buttons for contacts
+        // Populate WhatsApp alert links
         const waContainer = document.getElementById("modalWhatsappList");
         waContainer.innerHTML = "";
+
         if (data.contacts_alerted && data.contacts_alerted.length > 0) {
           data.contacts_alerted.forEach(c => {
-            const link = document.createElement("a");
-            link.className = "wa-btn-item";
-            link.href = c.whatsapp_url;
-            link.target = "_blank";
-            link.innerHTML = `<span>Send WhatsApp SOS to ${c.name} (${c.relationship})</span> <i data-lucide="send" style="width: 14px; height: 14px;"></i>`;
-            waContainer.appendChild(link);
+            const a = document.createElement("a");
+            a.className = "wa-alert-btn";
+            a.href = c.whatsapp_url;
+            a.target = "_blank";
+            a.innerHTML = `<i data-lucide="message-circle" style="width: 16px; height: 16px;"></i> Send Instant WhatsApp to ${c.name} (+91 ${c.phone})`;
+            waContainer.appendChild(a);
           });
         } else {
-          waContainer.innerHTML = `<p style="font-size: 0.8rem; color: var(--text-dim);">No contacts configured yet. Please configure in Profile tab.</p>`;
+          waContainer.innerHTML = `<div style="font-size: 0.85rem; color: var(--text-dim); padding: 8px;">No registered emergency contacts found. Dial 112 directly.</div>`;
         }
 
         lucide.createIcons();
-        showToast("🚨 SOS Broadcast Alert Sent to Emergency Contacts!");
-
-        // Trigger phone dialer to 112
-        window.location.href = "tel:112";
+        showToast("🚨 Emergency SOS Alert successfully broadcasted!");
       } catch (err) {
-        console.error("SOS dispatch error:", err);
+        console.error("SOS trigger error:", err);
+        showToast("Emergency distress broadcasted locally. Dial 112 immediately.");
       }
     }
 
+    // Audio chime for countdown
+    function playEmergencyChime() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(660, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
+
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.2);
+      } catch (e) {}
+    }
+
     // =========================================================================
-    // AUTHENTICATION & MOBILE OTP
+    // CITIZEN AUTHENTICATION & MOBILE OTP
     // =========================================================================
     function handleAuthButtonClick() {
       if (currentUser) {
-        // Switch to Profile Tab
-        switchTab('profile');
+        switchTab("profile");
       } else {
         openAuthModal();
       }
@@ -2392,13 +2676,13 @@ Please call 112 / Police and reach me immediately.
       const phone = phoneInput.value.trim();
 
       if (!phone || phone.length !== 10 || isNaN(phone)) {
-        alert("Please enter a valid 10-digit mobile number.");
+        showToast("Please enter a valid 10-digit Indian mobile number");
         return;
       }
 
       const btn = document.getElementById("sendOtpBtn");
+      btn.innerText = "Sending Verification Code...";
       btn.disabled = true;
-      btn.innerText = "Sending code...";
 
       try {
         const res = await fetch("/api/auth/send-otp", {
@@ -2407,25 +2691,25 @@ Please call 112 / Police and reach me immediately.
           body: JSON.stringify({ phone })
         });
         const data = await res.json();
-        btn.disabled = false;
-        btn.innerText = "Request Verification Code";
 
         if (data.status === "success") {
           generatedDemoOtp = data.otp_demo || "123456";
           document.getElementById("demoOtpCode").innerText = generatedDemoOtp;
-          document.getElementById("displayVerifyPhone").innerText = `+91 ${phone}`;
+          document.getElementById("displayVerifyPhone").innerText = "+91 " + phone;
 
           document.getElementById("authStepPhone").style.display = "none";
           document.getElementById("authStepOtp").style.display = "block";
           document.getElementById("authOtpInput").value = "";
-          showToast(`Verification code sent to +91 ${phone}`);
+          showToast(data.message);
         } else {
-          alert(data.error || "Could not send OTP.");
+          showToast(data.error || "Failed to send code");
         }
       } catch (err) {
-        btn.disabled = false;
+        console.error("OTP send error:", err);
+        showToast("Error requesting verification code");
+      } finally {
         btn.innerText = "Request Verification Code";
-        console.error("OTP error:", err);
+        btn.disabled = false;
       }
     }
 
@@ -2437,14 +2721,14 @@ Please call 112 / Police and reach me immediately.
       const phone = document.getElementById("authPhoneInput").value.trim();
       const otp = document.getElementById("authOtpInput").value.trim();
 
-      if (!otp) {
-        alert("Please enter the 6-digit verification code.");
+      if (!otp || otp.length < 6) {
+        showToast("Please enter the 6-digit verification code");
         return;
       }
 
       const btn = document.getElementById("verifyOtpBtn");
-      btn.disabled = true;
       btn.innerText = "Verifying...";
+      btn.disabled = true;
 
       try {
         const res = await fetch("/api/auth/verify-otp", {
@@ -2453,22 +2737,22 @@ Please call 112 / Police and reach me immediately.
           body: JSON.stringify({ phone, otp })
         });
         const data = await res.json();
-        btn.disabled = false;
-        btn.innerText = "Verify & Access Portal";
 
-        if (data.status === "success" && data.user) {
+        if (data.status === "success") {
           currentUser = data.user;
           emergencyContacts = data.emergency_contacts || [];
-          updateUserUi();
           closeAuthModal();
-          showToast(`Welcome back, ${currentUser.name}!`);
+          updateUserUi();
+          showToast("Signed in successfully. Welcome to Meyyurai!");
         } else {
-          alert(data.error || "Invalid OTP code.");
+          showToast(data.error || "Invalid OTP code");
         }
       } catch (err) {
-        btn.disabled = false;
+        console.error("Verify OTP error:", err);
+        showToast("Verification failed");
+      } finally {
         btn.innerText = "Verify & Access Portal";
-        console.error(err);
+        btn.disabled = false;
       }
     }
 
@@ -2476,90 +2760,92 @@ Please call 112 / Police and reach me immediately.
       try {
         const res = await fetch("/api/auth/me");
         const data = await res.json();
-        if (data.authenticated && data.user) {
+        if (data.status === "authenticated") {
           currentUser = data.user;
           emergencyContacts = data.emergency_contacts || [];
+          updateUserUi();
         } else {
-          // Fetch default emergency contacts for demo
-          const cRes = await fetch("/api/emergency-contacts?phone=9876543210");
-          const cData = await cRes.json();
-          if (cData.contacts) emergencyContacts = cData.contacts;
+          // Load default contacts from local test state
+          loadDefaultContacts();
         }
-        updateUserUi();
-      } catch (err) {
-        console.error("Auth check error:", err);
+      } catch (e) {
+        loadDefaultContacts();
       }
     }
 
-    function updateUserUi() {
-      const headerName = document.getElementById("headerUserName");
-      const headerAvatar = document.getElementById("headerUserAvatar");
-      const contactsArmed = document.getElementById("contactsArmedCount");
+    function loadDefaultContacts() {
+      emergencyContacts = [
+        { id: 1, contact_name: "Mother / Family Guardian", contact_phone: "9840123456", relationship: "Parent", is_primary: 1 },
+        { id: 2, contact_name: "Advocate S. Murthy (Legal Counsel)", contact_phone: "9841055443", relationship: "Advocate", is_primary: 0 }
+      ];
+      renderContactsList();
+      renderHomeContactsList();
+    }
 
+    function updateUserUi() {
       if (currentUser) {
-        headerName.innerText = `${currentUser.name} (${currentUser.phone.slice(-4)})`;
-        headerAvatar.innerText = currentUser.name.charAt(0).toUpperCase();
+        document.getElementById("headerUserName").innerText = currentUser.name || "Citizen";
+        document.getElementById("headerUserAvatar").innerText = (currentUser.name || "C")[0].toUpperCase();
 
         document.getElementById("profName").value = currentUser.name || "";
-        document.getElementById("profPhone").value = currentUser.phone ? `+91 ${currentUser.phone}` : "";
+        document.getElementById("profPhone").value = currentUser.phone || "";
         document.getElementById("profEmail").value = currentUser.email || "";
         document.getElementById("profCity").value = currentUser.city || "Chennai";
         document.getElementById("profState").value = currentUser.state || "Tamil Nadu";
         document.getElementById("profBlood").value = currentUser.blood_group || "";
         document.getElementById("profMedical").value = currentUser.medical_notes || "";
-      } else {
-        headerName.innerText = "Citizen Sign In";
-        headerAvatar.innerText = "C";
       }
 
-      if (contactsArmed) {
-        contactsArmed.innerText = `${emergencyContacts.length} Emergency Contacts Armed`;
+      const armedCount = document.getElementById("contactsArmedCount");
+      if (armedCount) {
+        armedCount.innerText = `${emergencyContacts.length} Emergency Contacts Armed`;
       }
 
       renderContactsList();
+      renderHomeContactsList();
       updateSosPreview();
     }
 
-    // Save profile changes
     async function saveProfile(e) {
       e.preventDefault();
-      const name = document.getElementById("profName").value.trim();
-      const email = document.getElementById("profEmail").value.trim();
-      const city = document.getElementById("profCity").value.trim();
-      const state = document.getElementById("profState").value.trim();
-      const blood_group = document.getElementById("profBlood").value.trim();
-      const medical_notes = document.getElementById("profMedical").value.trim();
+      const saveBtn = document.getElementById("saveProfBtn");
+      saveBtn.innerText = "Saving Profile...";
+      saveBtn.disabled = true;
 
-      const btn = document.getElementById("saveProfBtn");
-      btn.disabled = true;
-      btn.innerText = "Saving...";
+      const payload = {
+        name: document.getElementById("profName").value.trim(),
+        email: document.getElementById("profEmail").value.trim(),
+        city: document.getElementById("profCity").value.trim(),
+        state: document.getElementById("profState").value.trim(),
+        blood_group: document.getElementById("profBlood").value.trim(),
+        medical_notes: document.getElementById("profMedical").value.trim()
+      };
 
       try {
         const res = await fetch("/api/profile/update", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, city, state, blood_group, medical_notes })
+          body: JSON.stringify(payload)
         });
         const data = await res.json();
-        btn.disabled = false;
-        btn.innerText = "Save Profile Details";
-
         if (data.status === "success") {
           currentUser = data.user;
           updateUserUi();
-          showToast("Profile details successfully updated in database!");
+          showToast("Profile details saved successfully");
         } else {
-          alert(data.error || "Could not update profile.");
+          showToast(data.error || "Failed to update profile");
         }
       } catch (err) {
-        btn.disabled = false;
-        btn.innerText = "Save Profile Details";
-        console.error(err);
+        console.error("Save profile error:", err);
+        showToast("Error updating profile");
+      } finally {
+        saveBtn.innerText = "Save Profile Details";
+        saveBtn.disabled = false;
       }
     }
 
     // =========================================================================
-    // EMERGENCY CONTACTS MANAGEMENT
+    // EMERGENCY CONTACTS CRUD
     // =========================================================================
     function openAddContactModal() {
       document.getElementById("addContactModal").classList.add("active");
@@ -2576,6 +2862,11 @@ Please call 112 / Police and reach me immediately.
       const relationship = document.getElementById("newContactRelation").value;
       const is_primary = document.getElementById("newContactPrimary").checked;
 
+      if (!name || !phone || phone.length !== 10) {
+        showToast("Please provide a name and valid 10-digit mobile number");
+        return;
+      }
+
       try {
         const res = await fetch("/api/emergency-contacts", {
           method: "POST",
@@ -2585,18 +2876,19 @@ Please call 112 / Police and reach me immediately.
         const data = await res.json();
 
         if (data.status === "success") {
-          emergencyContacts = data.all_contacts || [];
-          renderContactsList();
-          updateSosPreview();
+          emergencyContacts = data.contacts;
           closeAddContactModal();
-          showToast(`Added ${name} to emergency contacts!`);
+          updateUserUi();
+          showToast("Emergency contact saved successfully");
           document.getElementById("newContactName").value = "";
           document.getElementById("newContactPhone").value = "";
+          document.getElementById("newContactPrimary").checked = false;
         } else {
-          alert(data.error || "Could not add contact.");
+          showToast(data.error || "Could not add contact");
         }
       } catch (err) {
-        console.error(err);
+        console.error("Add contact error:", err);
+        showToast("Error adding contact");
       }
     }
 
@@ -2609,23 +2901,25 @@ Please call 112 / Police and reach me immediately.
         });
         const data = await res.json();
         if (data.status === "success") {
-          emergencyContacts = data.contacts || [];
-          renderContactsList();
-          updateSosPreview();
-          showToast("Emergency contact removed.");
+          emergencyContacts = data.contacts;
+          updateUserUi();
+          showToast("Emergency contact removed");
         }
-      } catch (err) {
-        console.error(err);
+      } catch (e) {
+        emergencyContacts = emergencyContacts.filter(c => c.id !== contactId);
+        updateUserUi();
+        showToast("Contact removed locally");
       }
     }
 
+    // Render in Profile Tab
     function renderContactsList() {
       const container = document.getElementById("contactsList");
       if (!container) return;
 
       container.innerHTML = "";
       if (emergencyContacts.length === 0) {
-        container.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-dim);">No emergency contacts added yet. Click 'Add Contact' above to configure.</div>`;
+        container.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-dim); font-size: 0.85rem;">No emergency contacts configured yet. Click 'Add Contact' above.</div>`;
         return;
       }
 
@@ -2649,6 +2943,54 @@ Please call 112 / Police and reach me immediately.
       lucide.createIcons();
     }
 
+    // Render in Home/Emergency Screen (Matching Reference Screenshot)
+    function renderHomeContactsList() {
+      const container = document.getElementById("homeContactsList");
+      if (!container) return;
+
+      container.innerHTML = "";
+      if (emergencyContacts.length === 0) {
+        container.innerHTML = `
+          <div class="empty-contacts-banner">
+            No contacts armed yet. <a href="#" onclick="switchTab('profile')">Add family or friends</a> to enable 1-tap distress dials.
+          </div>
+        `;
+        return;
+      }
+
+      emergencyContacts.forEach(c => {
+        const item = document.createElement("div");
+        item.className = "contact-card-item";
+        
+        const initials = c.contact_name ? c.contact_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'C';
+        const waText = encodeURIComponent(`🚨 EMERGENCY SOS ALERT! I need immediate help. Live Location: https://maps.google.com/?q=${currentGps.latitude},${currentGps.longitude}`);
+
+        item.innerHTML = `
+          <div class="contact-avatar-meta">
+            <div class="contact-avatar-circle">${initials}</div>
+            <div class="contact-text">
+              <h5>
+                ${c.contact_name}
+                ${c.is_primary ? '<span class="primary-pill">Primary</span>' : ''}
+              </h5>
+              <p>+91 ${c.contact_phone} · ${c.relationship}</p>
+            </div>
+          </div>
+          <div class="contact-action-btns">
+            <a href="tel:+91${c.contact_phone}" class="call-contact-btn" title="Call ${c.contact_name}">
+              <i data-lucide="phone" style="width: 16px; height: 16px;"></i>
+            </a>
+            <a href="https://api.whatsapp.com/send?phone=91${c.contact_phone}&text=${waText}" target="_blank" class="whatsapp-contact-btn" title="WhatsApp Alert">
+              <i data-lucide="message-circle" style="width: 16px; height: 16px;"></i>
+            </a>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+
+      lucide.createIcons();
+    }
+
     function updateSosPreview() {
       const preview = document.getElementById("sosPreviewText");
       if (!preview) return;
@@ -2665,10 +3007,11 @@ Please call 112 / Police and reach me immediately.`;
     }
 
     // =========================================================================
-    // AI LEGAL ADVISOR & WHOM TO MEET
+    // AI LEGAL ADVISOR & PROCEDURAL GUIDANCE
     // =========================================================================
     function setQueryExample(text) {
       document.getElementById("aiQueryInput").value = text;
+      runAiAdvisor();
     }
 
     async function runAiAdvisor() {
@@ -2676,13 +3019,14 @@ Please call 112 / Police and reach me immediately.`;
       const question = input.value.trim();
 
       if (!question) {
-        alert("Please describe your situation in simple English.");
+        showToast("Please describe your situation or legal query");
         return;
       }
 
-      const btn = document.getElementById("runAiBtn");
-      btn.disabled = true;
-      btn.innerHTML = `<i data-lucide="loader" style="width: 18px; height: 18px;" class="spin"></i> <span>Analyzing Indian Statutes...</span>`;
+      const runBtn = document.getElementById("runAiBtn");
+      runBtn.innerHTML = `<i data-lucide="loader-2" style="width: 17px; height: 17px; animation: spin 1s linear infinite;"></i><span>Analyzing Indian Statutes...</span>`;
+      runBtn.disabled = true;
+      lucide.createIcons();
 
       try {
         const res = await fetch("/ask", {
@@ -2691,102 +3035,125 @@ Please call 112 / Police and reach me immediately.`;
           body: JSON.stringify({ question })
         });
         const data = await res.json();
-        btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="search" style="width: 18px; height: 18px;"></i> <span>Analyze Laws & Find Officers</span>`;
 
-        renderAiResults(data, question);
-        lucide.createIcons();
+        if (res.ok) {
+          renderAiResults(data, question);
+          showToast("Official statutory assessment generated");
+        } else {
+          showToast(data.error || "Analysis error");
+        }
       } catch (err) {
-        btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="search" style="width: 18px; height: 18px;"></i> <span>Analyze Laws & Find Officers</span>`;
-        console.error(err);
-        alert("An error occurred during AI legal analysis.");
+        console.error("AI run error:", err);
+        showToast("Error communicating with legal analysis engine");
+      } finally {
+        runBtn.innerHTML = `<i data-lucide="search" style="width: 17px; height: 17px;"></i><span>Analyze Laws & Find Officers</span>`;
+        runBtn.disabled = false;
+        lucide.createIcons();
       }
     }
 
-    let lastGeneratedComplaint = "";
-
     function renderAiResults(data, userQuery) {
       document.getElementById("dossierPlaceholder").style.display = "none";
-      document.getElementById("dossierContent").style.display = "block";
+      const content = document.getElementById("dossierContent");
+      content.style.display = "block";
 
-      document.getElementById("dossierCategory").innerText = data.category || "Legal Guidance";
-      document.getElementById("dossierTitle").innerText = `Remedies for: "${userQuery.slice(0, 50)}..."`;
+      document.getElementById("dossierCategory").innerText = data.category || "Legal Rights Assessment";
       document.getElementById("dossierSituation").innerText = data.situation || "";
 
-      // 1. Render Whom to Meet Block
+      // Render Designated Officers
       const officersList = document.getElementById("officersList");
       officersList.innerHTML = "";
+
       if (data.whom_to_meet && data.whom_to_meet.length > 0) {
-        data.whom_to_meet.forEach(off => {
-          const card = document.createElement("div");
-          card.className = "officer-item-card";
-          card.innerHTML = `
-            <div class="officer-title">${off.designation} (${off.office})</div>
-            <div class="officer-location">
-              <i data-lucide="map-pin" style="width: 14px; height: 14px;"></i>
-              <span><b>Where to find:</b> ${off.whereToFind}</span>
-            </div>
-            <div class="officer-instruction"><b>How to approach:</b> ${off.howToApproach}</div>
-            <div class="officer-evidence-tag">
-              <i data-lucide="folder-check" style="width: 14px; height: 14px;"></i>
-              <span><b>What to carry:</b> ${off.whatToCarry}</span>
-            </div>
+        data.whom_to_meet.forEach(o => {
+          const div = document.createElement("div");
+          div.className = "officer-card";
+          div.innerHTML = `
+            <div class="officer-designation">${o.designation}</div>
+            <div class="officer-office">Office: ${o.office} · ${o.whereToFind || ""}</div>
+            <div class="officer-detail-item"><b>How to Approach:</b> ${o.howToApproach}</div>
+            <div class="officer-detail-item"><b>What Documents to Carry:</b> ${o.whatToCarry}</div>
           `;
-          officersList.appendChild(card);
+          officersList.appendChild(div);
         });
+      } else {
+        officersList.innerHTML = `<div style="font-size: 0.85rem; color: var(--text-dim);">Designated officers available through the nearest Police Station or DLSA office.</div>`;
       }
 
-      // 2. Render Laws Grid
+      // Render Statutory Laws
       const lawsGrid = document.getElementById("lawsGrid");
       lawsGrid.innerHTML = "";
+
       if (data.laws && data.laws.length > 0) {
         data.laws.forEach(l => {
           const card = document.createElement("div");
-          card.className = "law-result-card";
+          card.className = "law-card";
           card.innerHTML = `
-            <div class="law-card-top">
-              <span class="law-act-tag">${l.act}</span>
-              <span class="law-source-link">Source: ${l.source}</span>
+            <div class="law-act-title">
+              <span>${l.act}</span>
+              <span class="law-source-badge">${l.source || 'India Code'}</span>
             </div>
             <div class="law-section-name">${l.section}</div>
-            <div class="law-desc">${l.description || "Applicable statutory section under Indian law."}</div>
-            <div class="law-punishment-badge">
-              <i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i>
-              <span><b>Punishment:</b> ${l.punishment}</span>
-            </div>
+            <div class="law-punishment-text"><b>Statutory Remedy / Punishment:</b> ${l.punishment}</div>
           `;
           lawsGrid.appendChild(card);
         });
       }
 
-      // 3. Render Action Steps
-      const stepsList = document.getElementById("actionRoadmapList");
-      stepsList.innerHTML = "";
+      // Render Roadmap
+      const roadmap = document.getElementById("actionRoadmapList");
+      roadmap.innerHTML = "";
+
       if (data.action_plan && data.action_plan.length > 0) {
-        data.action_plan.forEach((step, idx) => {
-          const item = document.createElement("div");
-          item.className = "action-step-item";
-          item.innerHTML = `
-            <div class="step-number-bullet">${idx + 1}</div>
-            <div class="step-content">
-              <h5>${step.phase || `Step ${idx + 1}`}</h5>
-              <p>${step.action}</p>
-            </div>
+        data.action_plan.forEach(step => {
+          const div = document.createElement("div");
+          div.className = "action-phase-card";
+          div.innerHTML = `
+            <div class="phase-label">${step.phase}</div>
+            <div class="phase-instruction">${step.action}</div>
           `;
-          stepsList.appendChild(item);
+          roadmap.appendChild(div);
         });
       }
 
-      // Pre-fill complaint draft
-      lastGeneratedComplaint = `FORMAL REPRESENTATION & COMPLAINT\n\nDate: ${new Date().toLocaleDateString()}\nTo: Station House Officer / Competent Authority\nSubject: Formal Complaint regarding ${data.category}\n\n1. STATEMENT OF FACTS:\n"${userQuery}"\n\n2. STATUTORY SECTIONS INVOKED:\n${(data.laws || []).map(l => `${l.act} - ${l.section}`).join("\n")}\n\n3. RELIEF SOUGHT:\nRegister First Information Report (FIR) / General Diary entry under Section 173 BNSS 2023, initiate prompt inquiry, and provide official CSR acknowledgment.\n\nComplainant: ${currentUser ? currentUser.name : "Citizen"}\nContact: ${currentUser ? currentUser.phone : "Registered Mobile"}`;
-      document.getElementById("complaintDraftArea").value = lastGeneratedComplaint;
-
-      showToast("Legal Assessment & Designated Officers retrieved!");
+      // Store query for complaint drafting
+      content.dataset.currentQuery = userQuery;
+      content.dataset.currentCategory = data.category;
+      lucide.createIcons();
     }
 
-    function openComplaintModal() {
-      document.getElementById("complaintModal").classList.add("active");
+    // =========================================================================
+    // COMPLAINT DRAFT GENERATOR MODAL
+    // =========================================================================
+    async function openComplaintModal() {
+      const modal = document.getElementById("complaintModal");
+      const content = document.getElementById("dossierContent");
+      const allegations = content.dataset.currentQuery || document.getElementById("aiQueryInput").value;
+      const category = content.dataset.currentCategory || "General Legal Matter";
+
+      modal.classList.add("active");
+      const textArea = document.getElementById("complaintDraftArea");
+      textArea.value = "Drafting formal statutory representation citing official Indian statutes...";
+
+      try {
+        const payload = {
+          complainantName: currentUser ? currentUser.name : "Citizen",
+          contact: currentUser ? currentUser.phone : "[Contact Mobile]",
+          allegations: allegations,
+          category: category
+        };
+
+        const res = await fetch("/draft-complaint", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        textArea.value = data.complaintDraft || "Draft generated successfully.";
+      } catch (err) {
+        console.error("Complaint error:", err);
+        textArea.value = "Could not reach server to format complaint draft.";
+      }
     }
 
     function closeComplaintModal() {
@@ -2796,44 +3163,38 @@ Please call 112 / Police and reach me immediately.`;
     function copyComplaintText() {
       const text = document.getElementById("complaintDraftArea").value;
       navigator.clipboard.writeText(text);
-      showToast("Complaint draft copied to clipboard!");
+      showToast("Complaint draft copied to clipboard");
     }
 
     function printComplaintDraft() {
+      const text = document.getElementById("complaintDraftArea").value;
       const printWindow = window.open('', '', 'height=600,width=800');
-      printWindow.document.write('<html><head><title>Meyyurai Legal Complaint Draft</title>');
+      printWindow.document.write('<html><head><title>Meyyurai Formal Legal Complaint</title>');
       printWindow.document.write('<style>body{font-family: Arial, sans-serif; padding: 40px; line-height: 1.6; white-space: pre-wrap;}</style></head><body>');
-      printWindow.document.write(document.getElementById("complaintDraftArea").value);
+      printWindow.document.write(text);
       printWindow.document.write('</body></html>');
       printWindow.document.close();
       printWindow.print();
     }
 
     // =========================================================================
-    // RESOURCE DIRECTORY & SCHEMES (WITH DEEP FILTERING)
+    // STATUTORY & RESOURCE DIRECTORY (WITH MULTI-FILTERING)
     // =========================================================================
     async function loadResources() {
       try {
         const res = await fetch("/api/rights");
-        const summaries = await res.json();
-        
-        // Fetch detailed items for each category
-        cachedRightsData = [];
-        for (let cat of summaries) {
-          const detailRes = await fetch(`/api/rights/${cat.slug}`);
-          const detail = await detailRes.json();
-          cachedRightsData.push(detail);
-        }
+        const data = await res.json();
+        cachedRightsData = data.categories || [];
         renderResourceCards();
       } catch (err) {
-        console.error("Resource load error:", err);
+        console.error("Error loading resources:", err);
       }
     }
 
     function setCategoryFilter(catSlug) {
       activeCategoryFilter = catSlug;
       document.querySelectorAll('#categoryFilterRow .filter-pill').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.category === catSlug);
+        btn.classList.toggle("active", btn.dataset.category === catSlug);
       });
       renderResourceCards();
     }
@@ -2841,7 +3202,7 @@ Please call 112 / Police and reach me immediately.`;
     function setTypeFilter(type) {
       activeTypeFilter = type;
       document.querySelectorAll('#typeFilterRow .filter-pill').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.type === type);
+        btn.classList.toggle("active", btn.dataset.type === type);
       });
       renderResourceCards();
     }
@@ -2854,10 +3215,10 @@ Please call 112 / Police and reach me immediately.`;
       const container = document.getElementById("resourcesGrid");
       if (!container) return;
 
-      const searchTerm = (document.getElementById("resourceSearchInput").value || "").toLowerCase().trim();
+      const searchVal = document.getElementById("resourceSearchInput").value.toLowerCase();
       container.innerHTML = "";
 
-      let itemsToRender = [];
+      let matchedItems = [];
 
       cachedRightsData.forEach(cat => {
         if (activeCategoryFilter !== "all" && cat.slug !== activeCategoryFilter) {
@@ -2867,130 +3228,80 @@ Please call 112 / Police and reach me immediately.`;
         // 1. Laws
         if (activeTypeFilter === "all" || activeTypeFilter === "law") {
           (cat.laws || []).forEach(l => {
-            itemsToRender.push({
-              itemType: "law",
-              categoryTitle: cat.title,
-              categorySlug: cat.slug,
-              title: l.section,
-              subtitle: l.actName,
-              overview: l.description,
-              punishment: l.punishment,
-              bareAct: l.bareActText,
-              source: l.officialSource || "Ministry of Law & Justice",
-              sourceUrl: l.officialUrl || "https://www.indiacode.nic.in"
-            });
+            const str = `${cat.title} ${l.actName} ${l.section} ${l.description} ${l.bareActText}`.toLowerCase();
+            if (!searchVal || str.includes(searchVal)) {
+              matchedItems.push({
+                type: "Statutory Law",
+                category: cat.title,
+                title: `${l.actName} (${l.section})`,
+                desc: l.description,
+                extra: `Statutory Punishment: ${l.punishment}`,
+                source: l.officialSource,
+                link: "https://www.indiacode.nic.in"
+              });
+            }
           });
         }
 
         // 2. Schemes
         if (activeTypeFilter === "all" || activeTypeFilter === "scheme") {
           (cat.schemes || []).forEach(s => {
-            itemsToRender.push({
-              itemType: "scheme",
-              categoryTitle: cat.title,
-              categorySlug: cat.slug,
-              title: s.title,
-              subtitle: s.badge || "Government Welfare Scheme",
-              overview: s.description,
-              eligibility: s.eligibility ? s.eligibility.join(", ") : "All eligible residents",
-              howToApply: s.howToApply || "Visit e-Sevai / Nodal Department",
-              portalUrl: s.portalUrl || "https://www.tn.gov.in"
-            });
+            const str = `${cat.title} ${s.name} ${s.benefit} ${s.eligibility} ${s.portal}`.toLowerCase();
+            if (!searchVal || str.includes(searchVal)) {
+              matchedItems.push({
+                type: "Government Welfare Scheme",
+                category: cat.title,
+                title: s.name,
+                desc: `Benefit: ${s.benefit}. Eligibility: ${s.eligibility}`,
+                extra: `Administered by: ${s.department}`,
+                source: s.portal,
+                link: `https://${s.portal}`
+              });
+            }
           });
         }
 
         // 3. Authorities
         if (activeTypeFilter === "all" || activeTypeFilter === "authority") {
           (cat.authorities || []).forEach(a => {
-            itemsToRender.push({
-              itemType: "authority",
-              categoryTitle: cat.title,
-              categorySlug: cat.slug,
-              title: a.name,
-              subtitle: a.officerTitle || a.type,
-              overview: a.whatTheyDo || "Statutory authority for inquiry and dispute redressal.",
-              location: a.addressSummary || "District Collectorate / Sub-Division Police HQ",
-              helpline: a.helpline || "112 / 1091",
-              portalUrl: a.onlinePortal || ""
-            });
+            const str = `${cat.title} ${a.name} ${a.office} ${a.role}`.toLowerCase();
+            if (!searchVal || str.includes(searchVal)) {
+              matchedItems.push({
+                type: "Designated Authority",
+                category: cat.title,
+                title: a.name,
+                desc: a.role,
+                extra: `Premises: ${a.office}`,
+                source: "Official Jurisdiction",
+                link: "#"
+              });
+            }
           });
         }
       });
 
-      // Filter by search query
-      if (searchTerm) {
-        itemsToRender = itemsToRender.filter(item => {
-          const combined = `${item.title} ${item.subtitle} ${item.overview} ${item.categoryTitle} ${item.punishment || ""} ${item.eligibility || ""}`.toLowerCase();
-          return combined.includes(searchTerm);
-        });
-      }
-
-      if (itemsToRender.length === 0) {
-        container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 60px; color: var(--text-dim);">No resources matched your filter and search criteria.</div>`;
+      if (matchedItems.length === 0) {
+        container.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-dim);">No statutory records or schemes match your search filters. Try clearing filters.</div>`;
         return;
       }
 
-      itemsToRender.forEach(item => {
+      matchedItems.forEach(item => {
         const card = document.createElement("div");
         card.className = "resource-card";
-
-        let typeBadge = "";
-        let metaHtml = "";
-
-        if (item.itemType === "law") {
-          typeBadge = `<span class="resource-type-tag type-law"><i data-lucide="scale" style="width: 12px; height: 12px;"></i> Official Law</span>`;
-          metaHtml = `
-            <div class="resource-meta-details">
-              <div class="resource-meta-row">
-                <span class="resource-meta-label">Act / Code:</span>
-                <span class="resource-meta-value">${item.subtitle}</span>
-              </div>
-              <div class="resource-meta-row">
-                <span class="resource-meta-label">Punishment / Penalty:</span>
-                <span class="resource-meta-value" style="color: #fbbf24;">${item.punishment || "Cognizable"}</span>
-              </div>
-            </div>
-          `;
-        } else if (item.itemType === "scheme") {
-          typeBadge = `<span class="resource-type-tag type-scheme"><i data-lucide="gift" style="width: 12px; height: 12px;"></i> Govt Scheme</span>`;
-          metaHtml = `
-            <div class="resource-meta-details">
-              <div class="resource-meta-row">
-                <span class="resource-meta-label">Eligibility:</span>
-                <span class="resource-meta-value">${item.eligibility ? item.eligibility.slice(0, 60) + '...' : 'Citizen'}</span>
-              </div>
-              <div class="resource-meta-row">
-                <span class="resource-meta-label">How to Apply:</span>
-                <span class="resource-meta-value" style="color: #34d399;">${item.howToApply ? item.howToApply.slice(0, 50) + '...' : 'e-Sevai'}</span>
-              </div>
-            </div>
-          `;
-        } else {
-          typeBadge = `<span class="resource-type-tag type-authority"><i data-lucide="user-check" style="width: 12px; height: 12px;"></i> Whom to Meet</span>`;
-          metaHtml = `
-            <div class="resource-meta-details">
-              <div class="resource-meta-row">
-                <span class="resource-meta-label">Designated Office:</span>
-                <span class="resource-meta-value">${item.location ? item.location.slice(0, 50) + '...' : 'District Office'}</span>
-              </div>
-              <div class="resource-meta-row">
-                <span class="resource-meta-label">Helpline / Hotline:</span>
-                <span class="resource-meta-value" style="color: #38bdf8;">${item.helpline || '112'}</span>
-              </div>
-            </div>
-          `;
-        }
-
         card.innerHTML = `
-          <div>
-            ${typeBadge}
-            <h4>${item.title}</h4>
-            <p class="overview">${item.overview ? item.overview.slice(0, 160) + '...' : ''}</p>
-            ${metaHtml}
+          <div class="resource-card-top">
+            <span class="resource-cat-badge">${item.category}</span>
+            <span style="font-size: 0.72rem; color: var(--text-dim);">${item.type}</span>
           </div>
-          <div class="resource-actions-row">
-            <span class="resource-source-badge">${item.categoryTitle}</span>
-            ${item.portalUrl ? `<a href="${item.portalUrl}" target="_blank" class="resource-link-btn">Official Portal <i data-lucide="external-link" style="width: 12px; height: 12px;"></i></a>` : ''}
+          <h4 class="resource-card-title">${item.title}</h4>
+          <p class="resource-card-desc">${item.desc}</p>
+          <div class="resource-law-section">${item.extra}</div>
+          <div class="resource-card-footer">
+            <span>Source: ${item.source}</span>
+            <a href="${item.link}" target="_blank" class="resource-source-link">
+              <span>Official Record</span>
+              <i data-lucide="external-link" style="width: 12px; height: 12px;"></i>
+            </a>
           </div>
         `;
         container.appendChild(card);

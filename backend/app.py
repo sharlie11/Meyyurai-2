@@ -5,8 +5,14 @@ import urllib.parse
 from pathlib import Path
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify, session
-import google.generativeai as genai
-import db
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
+try:
+    import db
+except ImportError:
+    from backend import db
 
 load_dotenv()
 
@@ -21,7 +27,7 @@ if "=" in GOOGLE_API_KEY and not GOOGLE_API_KEY.startswith("AIza"):
     GOOGLE_API_KEY = GOOGLE_API_KEY.split("=")[-1].strip().strip('"').strip("'")
 
 gemini_model = None
-if GOOGLE_API_KEY:
+if GOOGLE_API_KEY and genai:
     try:
         genai.configure(api_key=GOOGLE_API_KEY)
         gemini_model = genai.GenerativeModel("gemini-2.5-flash")
