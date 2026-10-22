@@ -5,6 +5,7 @@ import hashlib
 import time
 from pathlib import Path
 from datetime import datetime
+from typing import Optional, Dict, Any, Tuple
 
 DB_PATH = Path(__file__).resolve().parent / "meyyurai.db"
 
@@ -305,7 +306,22 @@ def get_emergency_contacts(user_id: int):
     return [dict(r) for r in rows]
 
 def add_emergency_contact(user_id: int, name: str, phone: str, relationship: str, is_primary: bool = False):
-    """Add a new emergency contact for the user."""
+    """Add a new emergency contact for the user with phone number and name validation."""
+    clean_phone = phone.strip().replace(" ", "").replace("-", "")
+    if clean_phone.startswith("+91"):
+        clean_phone = clean_phone[3:]
+    elif clean_phone.startswith("91") and len(clean_phone) > 10:
+        clean_phone = clean_phone[2:]
+
+    if not clean_phone or len(clean_phone) != 10 or not clean_phone.isdigit():
+        return None, "Contact mobile number must be a valid 10-digit Indian phone number."
+
+    clean_name = name.strip()
+    if not clean_name:
+        return None, "Contact name cannot be empty."
+
+    clean_rel = relationship.strip() or "Contact"
+
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -315,17 +331,59 @@ def add_emergency_contact(user_id: int, name: str, phone: str, relationship: str
     cursor.execute("""
         INSERT INTO emergency_contacts (user_id, contact_name, contact_phone, relationship, is_primary)
         VALUES (?, ?, ?, ?, ?)
-    """, (user_id, name.strip(), phone.strip(), relationship.strip(), 1 if is_primary else 0))
+    """, (user_id, clean_name, clean_phone, clean_rel, 1 if is_primary else 0))
 
     contact_id = cursor.lastrowid
     conn.commit()
     cursor.execute("SELECT * FROM emergency_contacts WHERE id = ?", (contact_id,))
     row = cursor.fetchone()
     conn.close()
-    return dict(row) if row else None
+    return dict(row) if row else None, None
+
+
+def update_emergency_contact(user_id: int, contact_id: int, name: str, phone: str, relationship: str, is_primary: bool = False):
+    """Update an existing emergency contact strictly for the authenticated user."""
+    clean_phone = phone.strip().replace(" ", "").replace("-", "")
+    if clean_phone.startswith("+91"):
+        clean_phone = clean_phone[3:]
+    elif clean_phone.startswith("91") and len(clean_phone) > 10:
+        clean_phone = clean_phone[2:]
+
+    if not clean_phone or len(clean_phone) != 10 or not clean_phone.isdigit():
+        return None, "Contact mobile number must be a valid 10-digit Indian phone number."
+
+    clean_name = name.strip()
+    if not clean_name:
+        return None, "Contact name cannot be empty."
+
+    clean_rel = relationship.strip() or "Contact"
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if is_primary:
+        cursor.execute("UPDATE emergency_contacts SET is_primary = 0 WHERE user_id = ?", (user_id,))
+
+    cursor.execute("""
+        UPDATE emergency_contacts
+        SET contact_name = ?, contact_phone = ?, relationship = ?, is_primary = ?
+        WHERE id = ? AND user_id = ?
+    """, (clean_name, clean_phone, clean_rel, 1 if is_primary else 0, contact_id, user_id))
+
+    updated = cursor.rowcount > 0
+    conn.commit()
+    if not updated:
+        conn.close()
+        return None, "Contact not found or unauthorized."
+
+    cursor.execute("SELECT * FROM emergency_contacts WHERE id = ?", (contact_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None, None
+
 
 def delete_emergency_contact(user_id: int, contact_id: int):
-    """Remove an emergency contact."""
+    """Remove an emergency contact strictly belonging to the authenticated user."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM emergency_contacts WHERE id = ? AND user_id = ?", (contact_id, user_id))
@@ -334,31 +392,55 @@ def delete_emergency_contact(user_id: int, contact_id: int):
     conn.close()
     return deleted
 
-def log_emergency_sos(user_id: int, latitude: float, longitude: float, address: str, contacts_alerted: str):
-    """Log an SOS trigger event in the database."""
+
+def log_emergency_sos(user_id: Optional[int], latitude: Optional[float], longitude: Optional[float], address: str, contacts_alerted: str, status: str = 'dispatched'):
+    """Log an SOS trigger event in the database, with a 5-second debounce check to prevent duplicates."""
     conn = get_connection()
     cursor = conn.cursor()
+
+    # Debounce check: if this user triggered an SOS in the last 5 seconds, return that active record
+    if user_id:
+        cursor.execute("""
+            SELECT id FROM emergency_sos_logs
+            WHERE user_id = ? AND status = 'dispatched'
+            AND (strftime('%s', 'now') - strftime('%s', created_at)) < 5
+            ORDER BY id DESC LIMIT 1
+        """, (user_id,))
+        recent = cursor.fetchone()
+        if recent:
+            conn.close()
+            return recent["id"]
+
     cursor.execute("""
         INSERT INTO emergency_sos_logs (user_id, latitude, longitude, address, contacts_alerted, status)
-        VALUES (?, ?, ?, ?, ?, 'dispatched')
-    """, (user_id, latitude, longitude, address, contacts_alerted))
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (user_id, latitude, longitude, address, contacts_alerted, status))
     sos_id = cursor.lastrowid
     conn.commit()
     conn.close()
     return sos_id
 
-def cancel_emergency_sos(sos_id: int):
-    """Cancel an active SOS record."""
+
+def cancel_emergency_sos(sos_id: int, user_id: Optional[int] = None):
+    """Cancel an active SOS record with user ownership check when user_id is provided."""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
-        UPDATE emergency_sos_logs
-        SET status = 'cancelled'
-        WHERE id = ?
-    """, (sos_id,))
+    if user_id:
+        cursor.execute("""
+            UPDATE emergency_sos_logs
+            SET status = 'cancelled'
+            WHERE id = ? AND (user_id = ? OR user_id IS NULL)
+        """, (sos_id, user_id))
+    else:
+        cursor.execute("""
+            UPDATE emergency_sos_logs
+            SET status = 'cancelled'
+            WHERE id = ?
+        """, (sos_id,))
+    updated = cursor.rowcount > 0
     conn.commit()
     conn.close()
-    return True
+    return updated
 
 # Initialize tables when imported
 init_db()

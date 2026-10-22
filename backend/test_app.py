@@ -320,28 +320,288 @@ def test_emergency_contacts_crud(client):
     assert data_del["status"] == "success"
 
 
-def test_emergency_sos_trigger_and_cancel(client):
-    """Test triggering emergency SOS and canceling it via the safeguard."""
+# ============================================================================
+# PHASE 3 — PRODUCTION EMERGENCY SOS & CONTACT DELIVERY TESTS
+# ============================================================================
+
+def test_emergency_sos_with_valid_location(client):
+    """Test emergency SOS with valid coordinates: live coords flagged, Google Maps link built."""
     sos_payload = {
         "latitude": 13.0827,
         "longitude": 80.2707,
-        "address": "Chennai Central"
+        "address": "Chennai Central Railway Station"
     }
     res_trigger = client.post("/api/emergency/trigger", json=sos_payload)
     assert res_trigger.status_code == 200
-    data_trigger = json.loads(res_trigger.data)
-    assert data_trigger["status"] == "alert_dispatched"
-    assert "sos_id" in data_trigger
-    assert "maps.google.com" in data_trigger["sos_text"]
-    assert len(data_trigger["contacts_alerted"]) > 0
+    data = json.loads(res_trigger.data)
 
-    sos_id = data_trigger["sos_id"]
+    assert data["status"] == "alert_initiated"
+    assert "sos_id" in data
+    assert data["location"]["has_live_coords"] is True
+    assert data["location"]["latitude"] == 13.0827
+    assert data["location"]["longitude"] == 80.2707
+    assert "maps.google.com" in data["location"]["map_url"]
+    assert "q=13.08270,80.27070" in data["location"]["map_url"]
+    assert "maps.google.com" in data["sos_text"]
+    assert data["direct_dial_police"] == "tel:112"
 
-    # Cancel SOS
+
+def test_emergency_sos_with_unavailable_or_invalid_location(client):
+    """Test emergency SOS when location is unavailable or denied: coords never fabricated."""
+    # 1. Null location
+    res1 = client.post("/api/emergency/trigger", json={"latitude": None, "longitude": None})
+    assert res1.status_code == 200
+    data1 = json.loads(res1.data)
+    assert data1["location"]["has_live_coords"] is False
+    assert data1["location"]["map_url"] is None
+    assert "Live GPS Unavailable" in data1["sos_text"]
+    assert "13.0827" not in data1["sos_text"]  # Ensure no fabricated Chennai fallback
+
+    # 2. Out-of-bounds invalid location
+    res2 = client.post("/api/emergency/trigger", json={"latitude": 999.0, "longitude": -500.0})
+    assert res2.status_code == 200
+    data2 = json.loads(res2.data)
+    assert data2["location"]["has_live_coords"] is False
+    assert data2["location"]["map_url"] is None
+
+
+def test_emergency_sos_no_contacts_zero_state(client):
+    """Verify that unauthenticated user or user with 0 contacts gets an empty contact list (no fake fallbacks)."""
+    # Trigger as guest (no session)
+    res = client.post("/api/emergency/trigger", json={"latitude": None, "longitude": None})
+    assert res.status_code == 200
+    data = json.loads(res.data)
+    assert data["has_contacts"] is False
+    assert data["contacts_alerted"] == []
+    # Ensure no fabricated "Emergency Guardian" or fake numbers are present
+    assert not any("Emergency Guardian" in str(c) for c in data["contacts_alerted"])
+
+
+def test_emergency_sos_with_registered_contacts_and_dispatch(client):
+    """Test emergency SOS with registered contacts: prepared URLs and server dispatch capture."""
+    phone = "9876543220"
+    conn = db.get_connection()
+    conn.cursor().execute("DELETE FROM otp_codes WHERE phone = ?", (phone,))
+    conn.commit()
+    conn.close()
+
+    # Authenticate user
+    client.post("/api/auth/send-otp", json={"phone": phone})
+    otp = sms_service.get_test_captured_otp(phone)
+    client.post("/api/auth/verify-otp", json={"phone": phone, "otp": otp})
+
+    # Add contact
+    client.post("/api/emergency-contacts", json={
+        "name": "Sister Priya",
+        "phone": "9840112233",
+        "relationship": "Sister",
+        "is_primary": True
+    })
+
+    sms_service.clear_test_captured_broadcasts()
+
+    # Trigger SOS
+    res = client.post("/api/emergency/trigger", json={
+        "latitude": 13.0827,
+        "longitude": 80.2707,
+        "address": "Park Town"
+    })
+    assert res.status_code == 200
+    data = json.loads(res.data)
+
+    assert data["has_contacts"] is True
+    assert len(data["contacts_alerted"]) == 1
+    contact_alert = data["contacts_alerted"][0]
+    assert contact_alert["name"] == "Sister Priya"
+    assert contact_alert["phone"] == "9840112233"
+    assert "https://api.whatsapp.com/send?phone=919840112233" in contact_alert["whatsapp_url"]
+    assert "sms:+919840112233" in contact_alert["sms_url"]
+    assert "tel:+919840112233" in contact_alert["tel_url"]
+
+    # In testing mode: automated broadcast captured in memory hook, NO real SMS gateway contacted
+    assert data["server_dispatch"]["status"] == "TEST_CAPTURED"
+    captured_broadcasts = sms_service.get_test_captured_broadcasts()
+    assert len(captured_broadcasts) >= 1
+    assert captured_broadcasts[-1]["contacts"][0]["contact_name"] == "Sister Priya"
+
+
+def test_emergency_sos_cancellation(client):
+    """Test that cancelling an active SOS marks its status as cancelled in the database."""
+    res_trigger = client.post("/api/emergency/trigger", json={
+        "latitude": 12.9716,
+        "longitude": 77.5946
+    })
+    assert res_trigger.status_code == 200
+    sos_id = json.loads(res_trigger.data)["sos_id"]
+    assert sos_id is not None
+
+    # Cancel via API
     res_cancel = client.post("/api/emergency/cancel", json={"sos_id": sos_id})
     assert res_cancel.status_code == 200
     data_cancel = json.loads(res_cancel.data)
     assert data_cancel["status"] == "cancelled"
+
+    # Verify status in database
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT status FROM emergency_sos_logs WHERE id = ?", (sos_id,))
+    row = cursor.fetchone()
+    conn.close()
+    assert row is not None
+    assert row["status"] == "cancelled"
+
+
+def test_duplicate_sos_debouncing(client):
+    """Test that rapid successive triggers within 5 seconds return the existing SOS ID to avoid duplicate dispatches."""
+    phone = "9876543221"
+    conn = db.get_connection()
+    conn.cursor().execute("DELETE FROM otp_codes WHERE phone = ?", (phone,))
+    conn.commit()
+    conn.close()
+
+    # Authenticate
+    client.post("/api/auth/send-otp", json={"phone": phone})
+    otp = sms_service.get_test_captured_otp(phone)
+    client.post("/api/auth/verify-otp", json={"phone": phone, "otp": otp})
+
+    # First trigger
+    res1 = client.post("/api/emergency/trigger", json={"latitude": 13.0, "longitude": 80.0})
+    sos_id_1 = json.loads(res1.data)["sos_id"]
+
+    # Immediate second trigger
+    res2 = client.post("/api/emergency/trigger", json={"latitude": 13.0, "longitude": 80.0})
+    sos_id_2 = json.loads(res2.data)["sos_id"]
+
+    # Must be debounced to the same SOS ID
+    assert sos_id_1 == sos_id_2
+
+
+def test_emergency_contact_crud_and_validation(client):
+    """Test contact phone number validation and PUT update endpoint."""
+    phone = "9876543222"
+    conn = db.get_connection()
+    conn.cursor().execute("DELETE FROM otp_codes WHERE phone = ?", (phone,))
+    conn.commit()
+    conn.close()
+
+    # Authenticate
+    client.post("/api/auth/send-otp", json={"phone": phone})
+    otp = sms_service.get_test_captured_otp(phone)
+    client.post("/api/auth/verify-otp", json={"phone": phone, "otp": otp})
+
+    # 1. Invalid phone numbers (non-digit, < 10 digits, > 10 digits)
+    res_bad1 = client.post("/api/emergency-contacts", json={"name": "Bad", "phone": "12345"})
+    assert res_bad1.status_code == 400
+    assert "10-digit" in json.loads(res_bad1.data)["error"]
+
+    res_bad2 = client.post("/api/emergency-contacts", json={"name": "Bad", "phone": "abcdefghij"})
+    assert res_bad2.status_code == 400
+
+    # 2. Empty name
+    res_bad3 = client.post("/api/emergency-contacts", json={"name": "", "phone": "9840112233"})
+    assert res_bad3.status_code == 400
+
+    # 3. Valid contact creation
+    res_add = client.post("/api/emergency-contacts", json={
+        "name": "Original Name",
+        "phone": "+91 9840112233",
+        "relationship": "Friend",
+        "is_primary": False
+    })
+    assert res_add.status_code == 200
+    contact_id = json.loads(res_add.data)["contact"]["id"]
+
+    # 4. PUT update contact
+    res_put = client.put(f"/api/emergency-contacts/{contact_id}", json={
+        "name": "Updated Name",
+        "phone": "9840998877",
+        "relationship": "Advocate",
+        "is_primary": True
+    })
+    assert res_put.status_code == 200
+    data_put = json.loads(res_put.data)
+    assert data_put["contact"]["contact_name"] == "Updated Name"
+    assert data_put["contact"]["contact_phone"] == "9840998877"
+    assert data_put["contact"]["relationship"] == "Advocate"
+    assert data_put["contact"]["is_primary"] == 1
+
+
+def test_emergency_contact_isolation_between_users(client):
+    """
+    CRITICAL SECURITY TEST: Ensure contacts of User A are strictly isolated from User B.
+    User B cannot view, update, or delete User A's contacts.
+    """
+    # 1. Setup User A
+    phone_a = "9876543230"
+    client.post("/api/auth/send-otp", json={"phone": phone_a})
+    otp_a = sms_service.get_test_captured_otp(phone_a)
+    client.post("/api/auth/verify-otp", json={"phone": phone_a, "otp": otp_a})
+
+    res_a_contact = client.post("/api/emergency-contacts", json={
+        "name": "User A Private Contact",
+        "phone": "9840000001",
+        "relationship": "Family"
+    })
+    contact_a_id = json.loads(res_a_contact.data)["contact"]["id"]
+
+    # Logout User A
+    client.post("/api/auth/logout")
+
+    # 2. Setup User B
+    phone_b = "9876543231"
+    client.post("/api/auth/send-otp", json={"phone": phone_b})
+    otp_b = sms_service.get_test_captured_otp(phone_b)
+    client.post("/api/auth/verify-otp", json={"phone": phone_b, "otp": otp_b})
+
+    # User B lists contacts: Must NOT see User A's contact
+    res_b_list = client.get("/api/emergency-contacts")
+    b_contacts = json.loads(res_b_list.data)["contacts"]
+    assert not any(c["id"] == contact_a_id for c in b_contacts)
+    assert not any(c["contact_name"] == "User A Private Contact" for c in b_contacts)
+
+    # User B attempts to UPDATE User A's contact: Must fail
+    res_b_put = client.put(f"/api/emergency-contacts/{contact_a_id}", json={
+        "name": "Hacked Contact",
+        "phone": "9840000999"
+    })
+    assert res_b_put.status_code == 400 or res_b_put.status_code == 404
+
+    # User B attempts to DELETE User A's contact: Must not delete it
+    res_b_del = client.delete(f"/api/emergency-contacts/{contact_a_id}")
+    assert res_b_del.status_code == 200
+    assert json.loads(res_b_del.data)["deleted"] is False
+
+    # Verify User A's contact is still safely intact in DB
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM emergency_contacts WHERE id = ?", (contact_a_id,))
+    row = cursor.fetchone()
+    conn.close()
+    assert row is not None
+    assert row["contact_name"] == "User A Private Contact"
+
+
+def test_sms_gateway_not_configured_provider_status():
+    """Verify that NotConfiguredProvider returns NOT_CONFIGURED status without false delivery claims."""
+    provider = sms_service.NotConfiguredProvider()
+    assert provider.is_configured() is False
+    assert provider.name == "none"
+
+    # Test OTP delivery status
+    otp_res = provider.send_otp("9876543210", "123456")
+    assert otp_res["success"] is False
+    assert otp_res["status"] == "NOT_CONFIGURED"
+    assert "SMS Gateway is not configured" in otp_res["message"]
+
+    # Test emergency broadcast delivery status
+    broadcast_res = provider.send_emergency_broadcast(
+        contacts=[{"contact_name": "Test", "contact_phone": "9840123456"}],
+        message="Distress message"
+    )
+    assert broadcast_res["success"] is False
+    assert broadcast_res["status"] == "NOT_CONFIGURED"
+    assert broadcast_res["delivered_count"] == 0
+    assert "safe alternative" in broadcast_res["message"].lower() or "whatsapp" in broadcast_res["message"].lower()
 
 
 def test_ask_ai_statutory_advisor(client):

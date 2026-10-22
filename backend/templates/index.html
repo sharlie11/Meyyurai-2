@@ -1576,6 +1576,58 @@
       font-size: 0.85rem;
       font-weight: 700;
       text-decoration: none;
+      transition: background 0.15s;
+    }
+
+    .wa-alert-btn:hover {
+      background: #dcfce7;
+    }
+
+    .sms-alert-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1d4ed8;
+      padding: 10px;
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+
+    .sms-alert-btn:hover {
+      background: #dbeafe;
+    }
+
+    .contact-alert-item-box {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+      text-align: left;
+    }
+
+    .contact-alert-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .contact-alert-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
     }
 
     /* Auth Modal Specifics */
@@ -2213,52 +2265,78 @@ Please call 112 / Police and reach me immediately.
        MODAL 1: 5-SECOND EMERGENCY COUNTDOWN (ACCIDENTAL TOUCH SAFEGUARD)
        ======================================================================== -->
   <div class="modal-backdrop" id="emergencyModal">
-    <div class="modal-dialog">
+    <div class="modal-dialog" style="max-width: 520px;">
+      <!-- State 1: 5-Second Accidental Safeguard Countdown -->
       <div class="emergency-modal-content" id="countdownState">
         <div class="countdown-circle-wrap">
           <span class="countdown-number" id="countdownTimer">5</span>
         </div>
 
-        <h3>EMERGENCY CALL INITIALIZING</h3>
-        <p class="warning-sub">To avoid accidental touches: Press Cancel immediately if you are safe.</p>
+        <h3>EMERGENCY SOS INITIATING</h3>
+        <p class="warning-sub">To avoid accidental trigger: Press Cancel immediately before the countdown expires.</p>
 
-        <!-- Prominent Dark Navy Cancel Button -->
-        <button class="cancel-emergency-btn" onclick="cancelEmergencyCountdown()">
+        <!-- Prominent Cancel Action Button -->
+        <button class="cancel-emergency-btn" id="cancelSosBtn" onclick="cancelEmergencyCountdown()">
           <i data-lucide="x-circle" style="width: 20px; height: 20px;"></i>
           <span>CANCEL CALL NOW (I AM SAFE)</span>
         </button>
 
-        <div style="margin-top: 18px; font-size: 0.8rem; color: var(--text-dim);">
-          Live GPS Location captured: <span id="modalGpsCoords" style="color: var(--brand-teal); font-weight: 600;">Detecting...</span>
+        <div style="margin-top: 18px; font-size: 0.8rem; color: var(--text-dim); text-align: center;">
+          <span id="modalGpsStatus">Live GPS: <b id="modalGpsCoords" style="color: var(--brand-teal);">Detecting on demand...</b></span>
+          <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 4px;">
+            Browser location requires user permission and HTTPS or localhost.
+          </div>
         </div>
       </div>
 
-      <!-- Dispatched Active State (After 5 Seconds) -->
-      <div class="emergency-dispatched-box" id="dispatchedState">
-        <div class="dispatched-badge">
-          <i data-lucide="check-circle" style="width: 14px; height: 14px;"></i>
-          <span>SOS BROADCAST DISPATCHED</span>
+      <!-- State 2: Initiating / In-Flight State -->
+      <div class="emergency-modal-content" id="dispatchingState" style="display: none; text-align: center; padding: 24px 10px;">
+        <div style="margin-bottom: 16px;">
+          <i data-lucide="loader-2" class="spin-icon" style="width: 36px; height: 36px; color: var(--brand-teal);"></i>
+        </div>
+        <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); margin-bottom: 6px;">Initiating SOS Broadcast...</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">Preparing distress dispatch and connecting with official services.</p>
+        <button class="cancel-emergency-btn" style="background: var(--bg-surface-elevated); color: var(--text-main); border: 1px solid var(--border-subtle); height: 44px;" onclick="cancelEmergencyCountdown()">
+          Cancel Dispatch
+        </button>
+      </div>
+
+      <!-- State 3: Confirmed Action State (After 5-Sec Countdown) -->
+      <div class="emergency-dispatched-box" id="dispatchedState" style="display: none;">
+        <div class="dispatched-badge" style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; padding: 4px 12px; border-radius: var(--radius-full); font-size: 0.78rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px;">
+          <i data-lucide="shield-alert" style="width: 14px; height: 14px;"></i>
+          <span>SOS BROADCAST INITIATED</span>
         </div>
 
-        <h3 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin-bottom: 6px;">Emergency Signals Sent</h3>
-        <p style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 20px;">
-          Distress message with your live GPS location link was dispatched to your emergency contacts.
+        <h3 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin-bottom: 6px;">Direct Assistance Ready</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+          Immediate voice helpline and 1-tap contact alerts have been prepared.
         </p>
 
-        <!-- Direct Emergency Call -->
+        <!-- Direct Emergency Call (112) -->
         <a href="tel:112" class="call-112-direct-btn">
           <i data-lucide="phone" style="width: 18px; height: 18px;"></i>
           <span>DIAL 112 (POLICE HELPLINE)</span>
         </a>
-
-        <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px;">
-          Direct WhatsApp Alert to Contacts:
-        </div>
-        <div class="whatsapp-alert-list" id="modalWhatsappList">
-          <!-- Injected dynamically -->
+        <div style="font-size: 0.76rem; color: var(--text-dim); margin-top: -12px; margin-bottom: 16px; text-align: center;">
+          Tap button to place direct call to 112 from your mobile/phone dialer.
         </div>
 
-        <button class="cancel-emergency-btn" style="margin-top: 20px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); color: var(--text-main);" onclick="closeEmergencyModal()">
+        <!-- Server SMS Gateway Notice -->
+        <div id="modalServerSmsNotice" style="margin-bottom: 12px; text-align: left;"></div>
+
+        <!-- Location Status Card -->
+        <div id="modalLocationCard" style="margin-bottom: 14px; text-align: left;"></div>
+
+        <!-- Prepared Contacts Alert List -->
+        <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px; text-align: left;">
+          Notify Emergency Contacts (1-Tap WhatsApp & Device SMS):
+        </div>
+        <div class="whatsapp-alert-list" id="modalContactsAlertList">
+          <!-- Dynamically populated -->
+        </div>
+
+        <button class="cancel-emergency-btn" style="margin-top: 18px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); color: var(--text-main); height: 46px;" onclick="closeEmergencyModal()">
           Close Emergency Panel
         </button>
       </div>
@@ -2433,18 +2511,21 @@ Please call 112 / Police and reach me immediately.
     // State variables
     let currentUser = null;
     let emergencyContacts = [];
-    let currentGps = { latitude: 13.0827, longitude: 80.2707, address: "Chennai, Tamil Nadu" };
+    let currentGps = null; // Strictly null initially. Never fabricate coordinates!
+    let isGpsPending = false;
+    let isSosInProgress = false;
     let countdownInterval = null;
     let countdownSeconds = 5;
     let activeSosId = null;
+    let sosAbortController = null;
     let cachedRightsData = [];
     let activeCategoryFilter = "all";
     let activeTypeFilter = "all";
 
-    // Initialize application on load
+    // Initialize application on load (DO NOT prompt location permission on load!)
     document.addEventListener("DOMContentLoaded", () => {
       lucide.createIcons();
-      initGpsTracking();
+      updateGpsBadgeUI();
       checkAuthStatus();
       loadResources();
     });
@@ -2478,48 +2559,106 @@ Please call 112 / Police and reach me immediately.
       }, duration);
     }
 
-    // Geolocation detection
-    function initGpsTracking() {
-      if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          pos => {
-            currentGps.latitude = parseFloat(pos.coords.latitude.toFixed(4));
-            currentGps.longitude = parseFloat(pos.coords.longitude.toFixed(4));
-            currentGps.address = `GPS Lat ${currentGps.latitude}, Lng ${currentGps.longitude}`;
-            
-            const badge = document.getElementById("gpsTelemetryStatus");
-            const modalBadge = document.getElementById("modalGpsCoords");
-            if (badge) badge.innerText = `GPS: ${currentGps.latitude}, ${currentGps.longitude}`;
-            if (modalBadge) modalBadge.innerText = `${currentGps.latitude}, ${currentGps.longitude}`;
-            updateSosPreview();
-          },
-          err => {
-            console.log("GPS warning:", err.message);
-            const badge = document.getElementById("gpsTelemetryStatus");
-            if (badge) badge.innerText = "GPS: Approx (Chennai)";
-          },
-          { enableHighAccuracy: true, timeout: 8000 }
-        );
+    // On-demand Geolocation Acquisition (Requested ONLY when needed)
+    function requestGpsLocation(isUserInitiated = false) {
+      if (!("geolocation" in navigator)) {
+        updateGpsBadgeUI("GPS: Not supported in this browser");
+        return;
+      }
+
+      isGpsPending = true;
+      updateGpsBadgeUI("GPS: Acquiring live coordinates...");
+
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          isGpsPending = false;
+          currentGps = {
+            latitude: parseFloat(pos.coords.latitude.toFixed(5)),
+            longitude: parseFloat(pos.coords.longitude.toFixed(5)),
+            address: `Detected GPS (${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)})`,
+            live: true
+          };
+          updateGpsBadgeUI(`GPS: Live (${currentGps.latitude}, ${currentGps.longitude})`);
+          updateSosPreview();
+          if (isUserInitiated) {
+            showToast("📍 Live GPS coordinates successfully acquired.");
+          }
+        },
+        err => {
+          isGpsPending = false;
+          currentGps = null;
+          let reason = "Permission Denied / GPS off";
+          if (err.code === 1) reason = "Permission Denied";
+          else if (err.code === 2) reason = "Location Unavailable";
+          else if (err.code === 3) reason = "Timeout";
+
+          updateGpsBadgeUI(`GPS: Unavailable (${reason})`);
+          updateSosPreview();
+          if (isUserInitiated) {
+            showToast("Could not acquire location. Ensure GPS is enabled and HTTPS/localhost is used.");
+          }
+        },
+        { enableHighAccuracy: true, timeout: 6000, maximumAge: 30000 }
+      );
+    }
+
+    function updateGpsBadgeUI(customText = null) {
+      const badge = document.getElementById("gpsTelemetryStatus");
+      const modalCoords = document.getElementById("modalGpsCoords");
+
+      let text = customText;
+      if (!text) {
+        if (currentGps && currentGps.live) {
+          text = `GPS: Live (${currentGps.latitude}, ${currentGps.longitude})`;
+        } else {
+          text = "GPS: On-Demand (Tap to detect)";
+        }
+      }
+
+      if (badge) badge.innerText = text;
+      if (modalCoords) {
+        if (currentGps && currentGps.live) {
+          modalCoords.innerText = `${currentGps.latitude}, ${currentGps.longitude}`;
+          modalCoords.style.color = "var(--brand-teal)";
+        } else if (isGpsPending) {
+          modalCoords.innerText = "Acquiring live satellite fix...";
+          modalCoords.style.color = "var(--brand-teal)";
+        } else {
+          modalCoords.innerText = "Unavailable (Not shared / GPS off)";
+          modalCoords.style.color = "var(--text-dim)";
+        }
       }
     }
 
     // =========================================================================
-    // EMERGENCY SOS WITH 5-SECOND ACCIDENTAL SAFEGUARD
+    // EMERGENCY SOS WITH 5-SECOND ACCIDENTAL SAFEGUARD & CANCELLATION
     // =========================================================================
     function openEmergencyCountdown() {
+      // Prevent duplicate triggers
+      if (isSosInProgress) return;
+      isSosInProgress = true;
+
       const modal = document.getElementById("emergencyModal");
       const countdownBox = document.getElementById("countdownState");
+      const dispatchingBox = document.getElementById("dispatchingState");
       const dispatchedBox = document.getElementById("dispatchedState");
       const timerEl = document.getElementById("countdownTimer");
 
       modal.classList.add("active");
       countdownBox.style.display = "block";
+      if (dispatchingBox) dispatchingBox.style.display = "none";
       dispatchedBox.style.display = "none";
 
       countdownSeconds = 5;
       timerEl.innerText = countdownSeconds;
 
-      // Play soft alert chime using Web Audio API
+      // On-demand location acquisition if not already held
+      if (!currentGps) {
+        requestGpsLocation(false);
+      } else {
+        updateGpsBadgeUI();
+      }
+
       playEmergencyChime();
 
       clearInterval(countdownInterval);
@@ -2538,75 +2677,187 @@ Please call 112 / Police and reach me immediately.
     // Accidental touch cancellation safeguard
     async function cancelEmergencyCountdown() {
       clearInterval(countdownInterval);
+      isSosInProgress = false;
+
+      // Abort in-flight network dispatch if any
+      if (sosAbortController) {
+        sosAbortController.abort();
+        sosAbortController = null;
+      }
+
       const modal = document.getElementById("emergencyModal");
       modal.classList.remove("active");
 
       if (activeSosId) {
+        const idToCancel = activeSosId;
+        activeSosId = null;
         try {
           await fetch("/api/emergency/cancel", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sos_id: activeSosId })
+            body: JSON.stringify({ sos_id: idToCancel })
           });
         } catch (e) {
           console.error("Cancel API error:", e);
         }
       }
 
-      showToast("Emergency SOS was cancelled safely. You are safe.");
+      showToast("Emergency SOS was cancelled safely. No alerts were placed.");
     }
 
     function closeEmergencyModal() {
       const modal = document.getElementById("emergencyModal");
       modal.classList.remove("active");
+      isSosInProgress = false;
     }
 
     // Actual Dispatch Execution
     async function executeEmergencyDispatch() {
       const countdownBox = document.getElementById("countdownState");
+      const dispatchingBox = document.getElementById("dispatchingState");
       const dispatchedBox = document.getElementById("dispatchedState");
 
+      // Check offline condition
+      if (!navigator.onLine) {
+        isSosInProgress = false;
+        countdownBox.style.display = "none";
+        if (dispatchingBox) dispatchingBox.style.display = "none";
+        dispatchedBox.style.display = "block";
+
+        const serverNotice = document.getElementById("modalServerSmsNotice");
+        serverNotice.innerHTML = `
+          <div style="background: #fee2e2; border: 1px solid #fca5a5; border-left: 4px solid var(--brand-red); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.82rem; color: #991b1b; line-height: 1.45;">
+            <strong>OFFLINE ALERT:</strong> Your device is offline. Automated server dispatch could not be contacted. Please tap the button below to <strong>DIAL 112</strong> immediately over your cellular voice network.
+          </div>
+        `;
+        const locationCard = document.getElementById("modalLocationCard");
+        locationCard.innerHTML = `<div style="font-size: 0.8rem; color: var(--text-dim);">Live GPS: Unavailable while offline.</div>`;
+        const contactsContainer = document.getElementById("modalContactsAlertList");
+        contactsContainer.innerHTML = "";
+        lucide.createIcons();
+        showToast("⚠️ Device is offline. Tap 'DIAL 112' immediately.");
+        return;
+      }
+
+      // Show intermediate dispatching state
       countdownBox.style.display = "none";
-      dispatchedBox.style.display = "block";
+      if (dispatchingBox) dispatchingBox.style.display = "block";
+
+      sosAbortController = new AbortController();
 
       try {
         const payload = {
-          latitude: currentGps.latitude,
-          longitude: currentGps.longitude,
-          address: currentGps.address
+          latitude: currentGps ? currentGps.latitude : null,
+          longitude: currentGps ? currentGps.longitude : null,
+          address: currentGps ? currentGps.address : "Location Unavailable"
         };
 
         const res = await fetch("/api/emergency/trigger", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
+          signal: sosAbortController.signal
         });
 
         const data = await res.json();
+        isSosInProgress = false;
         activeSosId = data.sos_id || null;
 
-        // Populate WhatsApp alert links
-        const waContainer = document.getElementById("modalWhatsappList");
-        waContainer.innerHTML = "";
+        if (dispatchingBox) dispatchingBox.style.display = "none";
+        dispatchedBox.style.display = "block";
+
+        // 1. Server SMS Delivery Status Feedback
+        const serverNotice = document.getElementById("modalServerSmsNotice");
+        if (data.server_dispatch) {
+          const sd = data.server_dispatch;
+          if (sd.status === "NOT_CONFIGURED") {
+            serverNotice.innerHTML = `
+              <div style="background: #fffbeb; border: 1px solid #fef3c7; border-left: 4px solid #f59e0b; border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.82rem; color: #92400e; line-height: 1.45;">
+                <strong>Server SMS Gateway: Not Configured</strong><br>
+                Automated background SMS to contacts is disabled because MSG91/Twilio/Fast2SMS credentials are not configured in the server environment.<br>
+                <strong>Safe alternative:</strong> Tap the WhatsApp or Device SMS buttons below to dispatch alerts directly from your phone.
+              </div>
+            `;
+          } else if (sd.status === "DELIVERED") {
+            serverNotice.innerHTML = `
+              <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.82rem; color: #166534; line-height: 1.45;">
+                <strong>Server SMS Dispatched:</strong> Automated distress alert successfully delivered to ${sd.delivered_count} contact(s).
+              </div>
+            `;
+          } else if (sd.status === "NO_CONTACTS") {
+            serverNotice.innerHTML = `
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #94a3b8; border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.82rem; color: #475569; line-height: 1.45;">
+                <strong>No Contacts Registered:</strong> No personal emergency contacts configured for this account. Tap <strong>DIAL 112</strong> immediately.
+              </div>
+            `;
+          }
+        }
+
+        // 2. Location Notice & Google Maps Link
+        const locationCard = document.getElementById("modalLocationCard");
+        if (data.location && data.location.has_live_coords && data.location.map_url) {
+          locationCard.innerHTML = `
+            <div style="background: #f0fdfa; border: 1px solid #ccfbf1; border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.82rem; color: var(--brand-teal); line-height: 1.45;">
+              📍 <strong>Live GPS Attached:</strong> (${data.location.latitude}, ${data.location.longitude})<br>
+              <a href="${data.location.map_url}" target="_blank" style="color: var(--brand-teal); font-weight: 700; text-decoration: underline;">
+                Open Location in Google Maps ↗
+              </a>
+            </div>
+          `;
+        } else {
+          locationCard.innerHTML = `
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.82rem; color: var(--text-dim); line-height: 1.45;">
+              📍 <strong>Live GPS: Unavailable</strong> (Permission was not granted or GPS disabled). Alert indicates location unavailable.
+            </div>
+          `;
+        }
+
+        // 3. Contacts Action List (WhatsApp, Device SMS, Call)
+        const contactsContainer = document.getElementById("modalContactsAlertList");
+        contactsContainer.innerHTML = "";
 
         if (data.contacts_alerted && data.contacts_alerted.length > 0) {
           data.contacts_alerted.forEach(c => {
-            const a = document.createElement("a");
-            a.className = "wa-alert-btn";
-            a.href = c.whatsapp_url;
-            a.target = "_blank";
-            a.innerHTML = `<i data-lucide="message-circle" style="width: 16px; height: 16px;"></i> Send Instant WhatsApp to ${c.name} (+91 ${c.phone})`;
-            waContainer.appendChild(a);
+            const box = document.createElement("div");
+            box.className = "contact-alert-item-box";
+            box.innerHTML = `
+              <div class="contact-alert-meta">
+                <span>${c.name} (${c.relationship}) ${c.is_primary ? '★ Primary' : ''}</span>
+                <span style="font-family: monospace; font-size: 0.8rem; color: var(--text-dim);">+91 ${c.phone}</span>
+              </div>
+              <div class="contact-alert-actions">
+                <a href="${c.whatsapp_url}" target="_blank" class="wa-alert-btn">
+                  <i data-lucide="message-circle" style="width: 14px; height: 14px;"></i>
+                  <span>WhatsApp</span>
+                </a>
+                <a href="${c.sms_url}" class="sms-alert-btn">
+                  <i data-lucide="mail" style="width: 14px; height: 14px;"></i>
+                  <span>Device SMS</span>
+                </a>
+              </div>
+            `;
+            contactsContainer.appendChild(box);
           });
         } else {
-          waContainer.innerHTML = `<div style="font-size: 0.85rem; color: var(--text-dim); padding: 8px;">No registered emergency contacts found. Dial 112 directly.</div>`;
+          contactsContainer.innerHTML = `
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 14px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+              No personal emergency contacts configured. Tap <strong>DIAL 112</strong> above immediately, or sign in to configure emergency contacts in your Profile.
+            </div>
+          `;
         }
 
         lucide.createIcons();
-        showToast("🚨 Emergency SOS Alert successfully broadcasted!");
+        showToast("🚨 Emergency SOS actions ready.");
       } catch (err) {
+        isSosInProgress = false;
+        if (err.name === "AbortError") {
+          console.log("SOS dispatch aborted by user cancellation.");
+          return;
+        }
         console.error("SOS trigger error:", err);
-        showToast("Emergency distress broadcasted locally. Dial 112 immediately.");
+        if (dispatchingBox) dispatchingBox.style.display = "none";
+        dispatchedBox.style.display = "block";
+        showToast("Network dispatch error. Dial 112 directly.");
       }
     }
 
@@ -2873,10 +3124,7 @@ Please call 112 / Police and reach me immediately.
     }
 
     function loadDefaultContacts() {
-      emergencyContacts = [
-        { id: 1, contact_name: "Mother / Family Guardian", contact_phone: "9840123456", relationship: "Parent", is_primary: 1 },
-        { id: 2, contact_name: "Advocate S. Murthy (Legal Counsel)", contact_phone: "9841055443", relationship: "Advocate", is_primary: 0 }
-      ];
+      emergencyContacts = [];
       renderContactsList();
       renderHomeContactsList();
     }
@@ -3108,7 +3356,11 @@ Please call 112 / Police and reach me immediately.
         item.className = "contact-card-item";
         
         const initials = c.contact_name ? c.contact_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'C';
-        const waText = encodeURIComponent(`🚨 EMERGENCY SOS ALERT! I need immediate help. Live Location: https://maps.google.com/?q=${currentGps.latitude},${currentGps.longitude}`);
+        const hasCoords = Boolean(currentGps && currentGps.latitude && currentGps.longitude);
+        const mapUrlPart = hasCoords
+          ? `https://maps.google.com/?q=${currentGps.latitude},${currentGps.longitude}`
+          : "Location Unavailable (Not shared or GPS disabled)";
+        const waText = encodeURIComponent(`🚨 EMERGENCY SOS ALERT! I need immediate help. Live Location: ${mapUrlPart}`);
 
         item.innerHTML = `
           <div class="contact-avatar-meta">
@@ -3142,12 +3394,15 @@ Please call 112 / Police and reach me immediately.
 
       const userName = currentUser ? currentUser.name : "Citizen";
       const userPhone = currentUser ? `(+91 ${currentUser.phone})` : "";
-      const mapUrl = `https://maps.google.com/?q=${currentGps.latitude},${currentGps.longitude}`;
+      const hasCoords = Boolean(currentGps && currentGps.latitude && currentGps.longitude);
+      let locPart = "📍 Location: Live GPS Unavailable (GPS permission required or off)";
+      if (hasCoords) {
+        locPart = `📍 My Live Location: https://maps.google.com/?q=${currentGps.latitude.toFixed(5)},${currentGps.longitude.toFixed(5)}\nApproximate Area: ${currentGps.address || "Detected GPS Coordinates"}`;
+      }
 
       preview.innerText = `🚨 EMERGENCY SOS ALERT from ${userName} ${userPhone}!
 I am in immediate danger and need urgent assistance.
-📍 My Live Location: ${mapUrl}
-Approximate Area: ${currentGps.address}
+${locPart}
 Please call 112 / Police and reach me immediately.`;
     }
 

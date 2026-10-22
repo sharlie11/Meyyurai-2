@@ -16,6 +16,7 @@ logger = logging.getLogger("meyyurai.sms")
 
 # Test hook storage (only populated during automated test runs)
 _TEST_CAPTURED_OTPS: Dict[str, str] = {}
+_TEST_CAPTURED_BROADCASTS = []
 
 
 def set_test_captured_otp(phone: str, otp: str) -> None:
@@ -33,6 +34,21 @@ def clear_test_captured_otps() -> None:
     _TEST_CAPTURED_OTPS.clear()
 
 
+def set_test_captured_broadcast(broadcast_payload: Dict[str, Any]) -> None:
+    """Testing hook: capture broadcast payload for test assertions."""
+    _TEST_CAPTURED_BROADCASTS.append(broadcast_payload)
+
+
+def get_test_captured_broadcasts() -> list:
+    """Testing hook: retrieve captured broadcast alerts."""
+    return list(_TEST_CAPTURED_BROADCASTS)
+
+
+def clear_test_captured_broadcasts() -> None:
+    """Testing hook: clear captured broadcast alerts."""
+    _TEST_CAPTURED_BROADCASTS.clear()
+
+
 class BaseSMSProvider:
     """Base interface for SMS providers."""
     name: str = "base"
@@ -41,6 +57,9 @@ class BaseSMSProvider:
         raise NotImplementedError
 
     def send_otp(self, phone: str, otp: str) -> Dict[str, Any]:
+        raise NotImplementedError
+
+    def send_emergency_broadcast(self, contacts: list, message: str) -> Dict[str, Any]:
         raise NotImplementedError
 
 
@@ -287,6 +306,21 @@ class NotConfiguredProvider(BaseSMSProvider):
                 f"{phone[-10:]}. Please configure MSG91_AUTH_KEY, TWILIO_ACCOUNT_SID, "
                 "or FAST2SMS_API_KEY in your environment."
             )
+        }
+
+    def send_emergency_broadcast(self, contacts: list, message: str) -> Dict[str, Any]:
+        return {
+            "success": False,
+            "provider": "none",
+            "status": "NOT_CONFIGURED",
+            "delivered_count": 0,
+            "total_contacts": len(contacts),
+            "message": (
+                "SMS Gateway is not configured. Automated background distress SMS cannot be sent. "
+                "Please configure MSG91_AUTH_KEY, TWILIO_ACCOUNT_SID, or FAST2SMS_API_KEY in the server environment. "
+                "Use 1-tap WhatsApp or Device SMS links to dispatch alerts directly from your phone."
+            ),
+            "results": []
         }
 
 

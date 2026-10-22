@@ -362,7 +362,7 @@ def update_profile():
 
 @app.route("/api/emergency-contacts", methods=["GET", "POST"])
 def handle_emergency_contacts():
-    """List or add emergency contacts for the authenticated user."""
+    """List or add emergency contacts strictly for the authenticated user."""
     try:
         user_id = session.get("user_id")
         if not user_id:
@@ -379,10 +379,10 @@ def handle_emergency_contacts():
         relationship = data.get("relationship", "Family").strip()
         is_primary = bool(data.get("is_primary", False))
 
-        if not name or not phone:
-            return jsonify({"status": "error", "error": "Contact name and phone are required."}), 400
+        new_contact, err_msg = db.add_emergency_contact(user_id, name, phone, relationship, is_primary)
+        if err_msg or not new_contact:
+            return jsonify({"status": "error", "error": err_msg or "Failed to add emergency contact."}), 400
 
-        new_contact = db.add_emergency_contact(user_id, name, phone, relationship, is_primary)
         all_contacts = db.get_emergency_contacts(user_id)
 
         return jsonify({
@@ -397,9 +397,39 @@ def handle_emergency_contacts():
         return jsonify({"status": "error", "error": str(e)}), 500
 
 
+@app.route("/api/emergency-contacts/<int:contact_id>", methods=["PUT"])
+def update_contact(contact_id):
+    """Update an existing emergency contact for the authenticated user."""
+    try:
+        user_id = session.get("user_id")
+        if not user_id:
+            return jsonify({"status": "error", "error": "Unauthorized. Authentication required."}), 401
+
+        data = request.get_json() or {}
+        name = data.get("name", "").strip()
+        phone = data.get("phone", "").strip()
+        relationship = data.get("relationship", "Family").strip()
+        is_primary = bool(data.get("is_primary", False))
+
+        contact, err_msg = db.update_emergency_contact(user_id, contact_id, name, phone, relationship, is_primary)
+        if err_msg or not contact:
+            return jsonify({"status": "error", "error": err_msg or "Failed to update emergency contact."}), 400
+
+        contacts = db.get_emergency_contacts(user_id)
+        return jsonify({
+            "status": "success",
+            "message": "Emergency contact updated successfully.",
+            "contact": contact,
+            "contacts": contacts
+        })
+    except Exception as e:
+        print("Error in PUT /api/emergency-contacts:", e)
+        return jsonify({"status": "error", "error": str(e)}), 500
+
+
 @app.route("/api/emergency-contacts/<int:contact_id>", methods=["DELETE"])
 def delete_contact(contact_id):
-    """Delete an emergency contact."""
+    """Delete an emergency contact strictly belonging to the authenticated user."""
     try:
         user_id = session.get("user_id")
         if not user_id:
@@ -427,82 +457,144 @@ def delete_contact(contact_id):
 def trigger_emergency():
     """
     Trigger Emergency SOS:
-    - Captures GPS coordinates and human address.
-    - Prepares emergency distress alert with Google Maps link.
-    - Broadcasts to registered emergency contacts (with direct WhatsApp & SMS links).
-    - Returns primary dialer target (112) and hotlines.
+    - Validates actual coordinates (never fabricates fake GPS).
+    - Distinguishes prepared client actions (WhatsApp/SMS links, 112 dialer) from server delivery.
+    - Accurately reports SMS Gateway configuration status.
+    - Uses user's saved contacts only (never fabricates fake contacts).
+    - In test mode, captures alert without calling real phone numbers.
     """
     try:
         data = request.get_json() or {}
         latitude = data.get("latitude")
         longitude = data.get("longitude")
-        address = data.get("address", "Current Detected GPS Location")
+        address = data.get("address", "Location Unavailable")
         emergency_type = data.get("emergencyType", "Immediate Distress & Protection")
+
+        # Validate actual GPS coordinates
+        valid_coords = False
+        try:
+            if latitude is not None and longitude is not None:
+                lat_f = float(latitude)
+                lng_f = float(longitude)
+                if -90.0 <= lat_f <= 90.0 and -180.0 <= lng_f <= 180.0 and not (lat_f == 0.0 and lng_f == 0.0):
+                    valid_coords = True
+                    latitude = lat_f
+                    longitude = lng_f
+        except (ValueError, TypeError):
+            valid_coords = False
 
         user_id = session.get("user_id")
         user = db.get_user_by_id(user_id) if user_id else None
         user_name = user["name"] if user else "Meyyurai Citizen"
         user_phone = user["phone"] if user else ""
 
-        # Fetch emergency contacts
+        # Fetch actual registered contacts (do NOT fabricate default contacts)
         contacts = db.get_emergency_contacts(user_id) if user_id else []
 
-        # If no contacts stored yet, use default fallbacks
-        if not contacts:
-            contacts = [
-                {"contact_name": "Emergency Guardian", "contact_phone": "9840123456", "relationship": "Family", "is_primary": 1}
-            ]
-
-        # Construct Maps link
-        if latitude and longitude:
-            map_url = f"https://maps.google.com/?q={latitude},{longitude}"
-            coords_str = f"({latitude:.5f}, {longitude:.5f})"
+        # Construct location string and link
+        if valid_coords:
+            map_url = f"https://maps.google.com/?q={latitude:.5f},{longitude:.5f}"
+            coords_str = f"Live GPS: ({latitude:.5f}, {longitude:.5f})"
+            loc_summary = f"{address} {coords_str}"
         else:
-            map_url = "https://maps.google.com"
-            coords_str = "GPS Coordinates pending"
+            map_url = None
+            coords_str = "Live GPS: Location Unavailable (Not shared or GPS disabled)"
+            loc_summary = "Location Unavailable"
 
-        # Pre-formulated distress alert message
-        sos_message = (
-            f"🚨 EMERGENCY SOS ALERT from {user_name} (Ph: {user_phone})!\n"
-            f"I am in immediate danger and need urgent assistance.\n"
-            f"📍 My Live Location: {map_url}\n"
-            f"Approximate Address: {address} {coords_str}\n"
-            f"Please call 112 / Police and reach me immediately."
-        )
+        # Formulate distress message
+        if valid_coords:
+            sos_message = (
+                f"🚨 EMERGENCY SOS ALERT from {user_name} (Ph: {user_phone})!\n"
+                f"I am in immediate danger and need urgent assistance.\n"
+                f"📍 My Live Location: {map_url}\n"
+                f"Approximate Address: {address} ({latitude:.5f}, {longitude:.5f})\n"
+                f"Please call 112 / Police and reach me immediately."
+            )
+        else:
+            sos_message = (
+                f"🚨 EMERGENCY SOS ALERT from {user_name} (Ph: {user_phone})!\n"
+                f"I am in immediate danger and need urgent assistance.\n"
+                f"📍 Location: Live GPS Unavailable / Not Shared by User.\n"
+                f"Please call 112 / Police and reach me immediately."
+            )
 
         encoded_msg = urllib.parse.quote(sos_message)
 
-        # Build contact notification payloads
+        # Build prepared client-side link payloads (1-tap WhatsApp and 1-tap SMS)
         alerted_list = []
         for c in contacts:
             c_phone = c.get("contact_phone", "").replace("+91", "").replace(" ", "").replace("-", "")
             wa_link = f"https://api.whatsapp.com/send?phone=91{c_phone}&text={encoded_msg}"
             sms_link = f"sms:+91{c_phone}?body={encoded_msg}"
+            tel_link = f"tel:+91{c_phone}"
             alerted_list.append({
+                "id": c.get("id"),
                 "name": c.get("contact_name"),
                 "phone": c_phone,
                 "relationship": c.get("relationship", "Contact"),
+                "is_primary": bool(c.get("is_primary")),
                 "whatsapp_url": wa_link,
-                "sms_url": sms_link
+                "sms_url": sms_link,
+                "tel_url": tel_link
             })
 
-        # Save record in database
+        # Automated server-side SMS dispatch via provider interface
+        provider = sms_service.get_sms_provider()
+
+        if app.config.get("TESTING"):
+            # Automated tests: capture in memory hook, NEVER call real phone numbers
+            sms_service.set_test_captured_broadcast({
+                "user_id": user_id,
+                "contacts": contacts,
+                "message": sos_message,
+                "valid_coords": valid_coords
+            })
+            server_dispatch = {
+                "status": "TEST_CAPTURED",
+                "provider": "test_mock",
+                "delivered_count": len(contacts),
+                "total_contacts": len(contacts),
+                "message": "Broadcast alert captured by test fixture."
+            }
+        else:
+            if contacts:
+                server_dispatch = provider.send_emergency_broadcast(contacts, sos_message)
+            else:
+                server_dispatch = {
+                    "status": "NO_CONTACTS",
+                    "provider": provider.name,
+                    "delivered_count": 0,
+                    "total_contacts": 0,
+                    "message": "No emergency contacts configured for this account. Dial 112 directly."
+                }
+
+        # Save record in database with debouncing against duplicate clicks
         contacts_summary = json.dumps([f"{c['name']} ({c['phone']})" for c in alerted_list])
-        sos_id = db.log_emergency_sos(user_id, latitude or 0.0, longitude or 0.0, address, contacts_summary)
+        sos_id = db.log_emergency_sos(
+            user_id,
+            latitude if valid_coords else None,
+            longitude if valid_coords else None,
+            loc_summary,
+            contacts_summary,
+            status="dispatched"
+        )
 
         return jsonify({
-            "status": "alert_dispatched",
+            "status": "alert_initiated",
             "sos_id": sos_id,
-            "message": "Emergency broadcast successfully initiated. Distress signals prepared for emergency contacts.",
-            "sos_text": sos_message,
+            "server_dispatch": server_dispatch,
             "location": {
-                "latitude": latitude,
-                "longitude": longitude,
+                "has_live_coords": valid_coords,
+                "latitude": latitude if valid_coords else None,
+                "longitude": longitude if valid_coords else None,
                 "map_url": map_url,
-                "address": address
+                "coords_text": coords_str,
+                "address": address if valid_coords else "Location not shared"
             },
             "contacts_alerted": alerted_list,
-            "police_dial_number": "tel:112",
+            "has_contacts": len(contacts) > 0,
+            "sos_text": sos_message,
+            "direct_dial_police": "tel:112",
             "helplines": [
                 {"name": "National Emergency & Police", "number": "112", "dial": "tel:112"},
                 {"name": "Women Helpline (National)", "number": "1091", "dial": "tel:1091"},
@@ -522,8 +614,9 @@ def cancel_emergency():
     try:
         data = request.get_json() or {}
         sos_id = data.get("sos_id")
+        user_id = session.get("user_id")
         if sos_id:
-            db.cancel_emergency_sos(int(sos_id))
+            db.cancel_emergency_sos(int(sos_id), user_id)
         return jsonify({
             "status": "cancelled",
             "message": "Emergency SOS was safely cancelled. No distress call was placed."
