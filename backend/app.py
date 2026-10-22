@@ -14,10 +14,17 @@ try:
 except ImportError:
     from backend import db
 
+try:
+    import sms_service
+except ImportError:
+    from backend import sms_service
+
 load_dotenv()
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.secret_key = os.getenv("SECRET_KEY", "meyyurai_secure_key_2026_sos_portal")
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 # Configure Gemini AI (with graceful local fallback if API key is missing or offline)
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "").strip()
@@ -213,34 +220,49 @@ def home():
 
 @app.route("/api/auth/send-otp", methods=["POST"])
 def send_otp():
-    """Generate 6-digit OTP code for phone login/registration."""
+    """Generate 6-digit cryptographic OTP code with cooldown and SMS provider dispatch."""
     try:
         data = request.get_json() or {}
         phone = data.get("phone", "").strip()
         
         # Clean phone
         clean_phone = phone.replace(" ", "").replace("-", "").replace("+91", "")
+        if clean_phone.startswith("91") and len(clean_phone) > 10:
+            clean_phone = clean_phone[2:]
+
         if not clean_phone or len(clean_phone) != 10 or not clean_phone.isdigit():
             return jsonify({"status": "error", "error": "Please enter a valid 10-digit mobile number."}), 400
 
-        otp = db.generate_otp_for_phone(clean_phone)
+        otp, err_msg, status_code = db.generate_otp_for_phone(clean_phone)
+        if err_msg or not otp:
+            return jsonify({"status": "error", "error": err_msg}), status_code
 
-        # In local development, provide on-screen demo OTP for convenience while simulating real SMS
+        # Dispatch via SMS provider interface
+        provider = sms_service.get_sms_provider()
+        delivery = provider.send_otp(clean_phone, otp)
+
+        # In automated test mode ONLY, capture OTP in memory for test assertions
+        if app.config.get("TESTING"):
+            sms_service.set_test_captured_otp(clean_phone, otp)
+
+        # Production response: NEVER return otp or otp_demo
         return jsonify({
             "status": "success",
-            "message": f"Verification code successfully sent to +91 {clean_phone}",
+            "message": f"Verification code request processed for +91 {clean_phone}.",
             "phone": clean_phone,
-            "otp_demo": otp,  # Displays in testing toast for seamless onboarding
-            "expires_in_seconds": 300
+            "delivery": delivery.get("status", "NOT_CONFIGURED"),
+            "delivery_message": delivery.get("message", ""),
+            "expires_in_seconds": 300,
+            "resend_in_seconds": 60
         })
     except Exception as e:
         print("Error in /api/auth/send-otp:", e)
-        return jsonify({"status": "error", "error": str(e)}), 500
+        return jsonify({"status": "error", "error": "Failed to send verification code. Please try again."}), 500
 
 
 @app.route("/api/auth/verify-otp", methods=["POST"])
 def verify_otp():
-    """Verify OTP and authenticate user session."""
+    """Verify OTP and authenticate user session (no hardcoded bypasses)."""
     try:
         data = request.get_json() or {}
         phone = data.get("phone", "").strip()
@@ -249,11 +271,11 @@ def verify_otp():
         if not phone or not otp:
             return jsonify({"status": "error", "error": "Phone number and OTP code are required."}), 400
 
-        user, err_msg = db.verify_phone_otp(phone, otp)
+        user, err_msg, status_code = db.verify_phone_otp(phone, otp)
         if err_msg or not user:
-            return jsonify({"status": "error", "error": err_msg or "Verification failed."}), 400
+            return jsonify({"status": "error", "error": err_msg or "Verification failed."}), status_code
 
-        # Save session
+        # Session is strictly established ONLY after successful OTP verification
         session["user_id"] = user["id"]
         session["phone"] = user["phone"]
 
@@ -267,7 +289,7 @@ def verify_otp():
         })
     except Exception as e:
         print("Error in /api/auth/verify-otp:", e)
-        return jsonify({"status": "error", "error": str(e)}), 500
+        return jsonify({"status": "error", "error": "Verification failed due to a server error."}), 500
 
 
 @app.route("/api/auth/me", methods=["GET"])
@@ -275,18 +297,9 @@ def get_current_user():
     """Get current authenticated user, profile details, and emergency contacts."""
     try:
         user_id = session.get("user_id")
-        
-        # If no active session, check if query param ?phone= is passed for developer flexibility
-        if not user_id:
-            dev_phone = request.args.get("phone", "").strip()
-            if dev_phone:
-                user = db.get_user_by_phone(dev_phone)
-                if user:
-                    user_id = user["id"]
-                    session["user_id"] = user_id
 
+        # STRICT: No query param (?phone=) backdoor permitted!
         if not user_id:
-            # Return unauthenticated guest state
             return jsonify({
                 "status": "unauthenticated",
                 "authenticated": False,
@@ -297,7 +310,12 @@ def get_current_user():
         user = db.get_user_by_id(user_id)
         if not user:
             session.clear()
-            return jsonify({"status": "unauthenticated", "authenticated": False, "user": None, "emergency_contacts": []})
+            return jsonify({
+                "status": "unauthenticated",
+                "authenticated": False,
+                "user": None,
+                "emergency_contacts": []
+            })
 
         contacts = db.get_emergency_contacts(user_id)
         return jsonify({
@@ -320,22 +338,13 @@ def logout():
 
 @app.route("/api/profile/update", methods=["POST"])
 def update_profile():
-    """Update profile fields for the logged-in user in SQLite."""
+    """Update profile fields for the authenticated user in SQLite."""
     try:
         user_id = session.get("user_id")
+        if not user_id:
+            return jsonify({"status": "error", "error": "Unauthorized. Please log in to update your profile."}), 401
+
         data = request.get_json() or {}
-
-        if not user_id:
-            # Check phone if passed directly
-            phone = data.get("phone")
-            if phone:
-                user = db.get_user_by_phone(phone)
-                if user:
-                    user_id = user["id"]
-
-        if not user_id:
-            return jsonify({"status": "error", "error": "Please log in to update your profile."}), 401
-
         updated_user = db.update_user_profile(user_id, data)
         return jsonify({
             "status": "success",
@@ -353,19 +362,11 @@ def update_profile():
 
 @app.route("/api/emergency-contacts", methods=["GET", "POST"])
 def handle_emergency_contacts():
-    """List or add emergency contacts for the user."""
+    """List or add emergency contacts for the authenticated user."""
     try:
         user_id = session.get("user_id")
         if not user_id:
-            body = request.get_json(silent=True) or {}
-            phone = request.args.get("phone") or body.get("user_phone") or body.get("phone")
-            if phone:
-                user = db.get_user_by_phone(phone)
-                if user:
-                    user_id = user["id"]
-
-        if not user_id:
-            return jsonify({"status": "error", "error": "Authentication required."}), 401
+            return jsonify({"status": "error", "error": "Unauthorized. Authentication required."}), 401
 
         if request.method == "GET":
             contacts = db.get_emergency_contacts(user_id)
@@ -402,15 +403,7 @@ def delete_contact(contact_id):
     try:
         user_id = session.get("user_id")
         if not user_id:
-            body = request.get_json(silent=True) or {}
-            phone = request.args.get("phone") or body.get("phone")
-            if phone:
-                user = db.get_user_by_phone(phone)
-                if user:
-                    user_id = user["id"]
-
-        if not user_id:
-            return jsonify({"status": "error", "error": "Authentication required."}), 401
+            return jsonify({"status": "error", "error": "Unauthorized. Authentication required."}), 401
 
         deleted = db.delete_emergency_contact(user_id, contact_id)
         contacts = db.get_emergency_contacts(user_id)

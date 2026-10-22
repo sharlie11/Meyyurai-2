@@ -1593,29 +1593,7 @@
       line-height: 1.45;
     }
 
-    .otp-dev-badge {
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      border-radius: var(--radius-sm);
-      padding: 10px 14px;
-      font-size: 0.82rem;
-      color: #1e40af;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
 
-    .auto-fill-otp-btn {
-      background: #2563eb;
-      color: #ffffff;
-      border: none;
-      padding: 3px 8px;
-      border-radius: var(--radius-sm);
-      font-size: 0.72rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
 
     /* ==========================================================================
        MOBILE BOTTOM NAVIGATION (Fixed at bottom on phones, hidden on laptop)
@@ -2179,9 +2157,15 @@
               <input type="text" id="profMedical" class="form-input" placeholder="Allergies, emergency instructions">
             </div>
 
-            <button type="submit" class="save-profile-btn" id="saveProfBtn">
-              Save Profile Details
-            </button>
+            <div style="display: flex; gap: 12px; margin-top: 14px;">
+              <button type="submit" class="save-profile-btn" id="saveProfBtn" style="flex: 1;">
+                Save Profile Details
+              </button>
+              <button type="button" class="draft-btn" id="logoutBtn" onclick="handleLogout()" style="background: var(--bg-surface-elevated); color: var(--brand-red); border: 1px solid #fee2e2; display: none;">
+                <i data-lucide="log-out" style="width: 15px; height: 15px;"></i>
+                <span>Sign Out</span>
+              </button>
+            </div>
           </form>
         </div>
 
@@ -2308,25 +2292,29 @@ Please call 112 / Police and reach me immediately.
       <!-- Step 2: OTP Entry -->
       <div id="authStepOtp" style="display: none;">
         <h3 class="auth-title">Enter Verification Code</h3>
-        <p class="auth-sub">We sent a 6-digit code to <b id="displayVerifyPhone">+91</b></p>
+        <p class="auth-sub">Enter the 6-digit verification code sent to <b id="displayVerifyPhone">+91</b></p>
 
-        <div class="otp-dev-badge" id="otpSimulationBox">
-          <span>Demo OTP: <b id="demoOtpCode" style="font-family: monospace; font-size: 1rem; color: #1e3a8a;">123456</b></span>
-          <button class="auto-fill-otp-btn" onclick="autoFillOtp()">Auto-Fill OTP</button>
-        </div>
+        <div id="smsDeliveryNotice" style="display: none; background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #f59e0b; border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 16px; font-size: 0.8rem; color: #92400e; line-height: 1.45;"></div>
+
+        <div id="otpErrorNotice" style="display: none; background: #fef2f2; border: 1px solid #fee2e2; border-left: 4px solid var(--brand-red); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 16px; font-size: 0.8rem; color: #991b1b; line-height: 1.45;"></div>
 
         <div class="form-group">
-          <label class="form-label">6-Digit OTP Code</label>
-          <input type="text" id="authOtpInput" class="form-input" placeholder="123456" maxlength="6" style="font-size: 1.3rem; letter-spacing: 0.25em; text-align: center; font-family: monospace;">
+          <label class="form-label" for="authOtpInput">6-Digit Security Code</label>
+          <input type="text" id="authOtpInput" class="form-input" placeholder="••••••" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" style="font-size: 1.35rem; letter-spacing: 0.35em; text-align: center; font-family: monospace;">
         </div>
 
         <button class="submit-ai-btn" id="verifyOtpBtn" onclick="handleVerifyOtp()">
           <span>Verify & Access Portal</span>
         </button>
 
-        <button style="background: transparent; border: none; color: var(--text-dim); font-size: 0.8rem; margin-top: 14px; cursor: pointer; width: 100%; text-align: center; font-family: inherit;" onclick="backToPhoneStep()">
-          ← Change Mobile Number
-        </button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; font-size: 0.82rem;">
+          <button id="resendOtpBtn" style="background: transparent; border: none; color: var(--text-dim); font-weight: 700; cursor: not-allowed; padding: 0; font-family: inherit;" onclick="handleResendOtp()" disabled>
+            Resend Code (60s)
+          </button>
+          <button style="background: transparent; border: none; color: var(--text-dim); cursor: pointer; padding: 0; font-family: inherit;" onclick="backToPhoneStep()">
+            ← Change Mobile Number
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -2452,7 +2440,6 @@ Please call 112 / Police and reach me immediately.
     let cachedRightsData = [];
     let activeCategoryFilter = "all";
     let activeTypeFilter = "all";
-    let generatedDemoOtp = "123456";
 
     // Initialize application on load
     document.addEventListener("DOMContentLoaded", () => {
@@ -2671,9 +2658,36 @@ Please call 112 / Police and reach me immediately.
       document.getElementById("authStepOtp").style.display = "none";
     }
 
+    let resendTimer = null;
+    let resendCountdown = 60;
+
+    function startResendCooldown(seconds = 60) {
+      clearInterval(resendTimer);
+      resendCountdown = seconds;
+      const resendBtn = document.getElementById("resendOtpBtn");
+      if (!resendBtn) return;
+      resendBtn.disabled = true;
+      resendBtn.innerText = `Resend Code (${resendCountdown}s)`;
+      resendBtn.style.color = "var(--text-dim)";
+      resendBtn.style.cursor = "not-allowed";
+
+      resendTimer = setInterval(() => {
+        resendCountdown--;
+        if (resendCountdown <= 0) {
+          clearInterval(resendTimer);
+          resendBtn.disabled = false;
+          resendBtn.innerText = "Resend Code";
+          resendBtn.style.color = "var(--brand-teal)";
+          resendBtn.style.cursor = "pointer";
+        } else {
+          resendBtn.innerText = `Resend Code (${resendCountdown}s)`;
+        }
+      }, 1000);
+    }
+
     async function handleSendOtp() {
       const phoneInput = document.getElementById("authPhoneInput");
-      const phone = phoneInput.value.trim();
+      const phone = phoneInput.value.trim().replace(/\s+/g, "").replace(/-/g, "");
 
       if (!phone || phone.length !== 10 || isNaN(phone)) {
         showToast("Please enter a valid 10-digit Indian mobile number");
@@ -2681,7 +2695,7 @@ Please call 112 / Police and reach me immediately.
       }
 
       const btn = document.getElementById("sendOtpBtn");
-      btn.innerText = "Sending Verification Code...";
+      btn.innerText = "Sending Code...";
       btn.disabled = true;
 
       try {
@@ -2692,15 +2706,32 @@ Please call 112 / Police and reach me immediately.
         });
         const data = await res.json();
 
-        if (data.status === "success") {
-          generatedDemoOtp = data.otp_demo || "123456";
-          document.getElementById("demoOtpCode").innerText = generatedDemoOtp;
+        if (res.ok && data.status === "success") {
           document.getElementById("displayVerifyPhone").innerText = "+91 " + phone;
+
+          // SMS Gateway status notice
+          const deliveryNotice = document.getElementById("smsDeliveryNotice");
+          if (data.delivery === "NOT_CONFIGURED") {
+            deliveryNotice.style.display = "block";
+            deliveryNotice.innerHTML = `<strong>SMS Status: NOT CONFIGURED</strong><br>Third-party SMS credentials (MSG91, Twilio, or Fast2SMS) are not configured in the server environment. Once environment variables are supplied, verification codes will dispatch to your phone.`;
+          } else {
+            deliveryNotice.style.display = "none";
+          }
+
+          const errorNotice = document.getElementById("otpErrorNotice");
+          if (errorNotice) {
+            errorNotice.style.display = "none";
+            errorNotice.innerText = "";
+          }
 
           document.getElementById("authStepPhone").style.display = "none";
           document.getElementById("authStepOtp").style.display = "block";
-          document.getElementById("authOtpInput").value = "";
-          showToast(data.message);
+          const otpInput = document.getElementById("authOtpInput");
+          otpInput.value = "";
+          otpInput.focus();
+
+          startResendCooldown(data.resend_in_seconds || 60);
+          showToast(data.message || "Verification code requested.");
         } else {
           showToast(data.error || "Failed to send code");
         }
@@ -2713,16 +2744,58 @@ Please call 112 / Police and reach me immediately.
       }
     }
 
-    function autoFillOtp() {
-      document.getElementById("authOtpInput").value = generatedDemoOtp;
+    async function handleResendOtp() {
+      const phone = document.getElementById("authPhoneInput").value.trim().replace(/\s+/g, "").replace(/-/g, "");
+      if (!phone || phone.length !== 10) {
+        showToast("Please enter a valid phone number");
+        backToPhoneStep();
+        return;
+      }
+
+      const resendBtn = document.getElementById("resendOtpBtn");
+      resendBtn.disabled = true;
+      resendBtn.innerText = "Requesting...";
+
+      try {
+        const res = await fetch("/api/auth/send-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.status === "success") {
+          startResendCooldown(data.resend_in_seconds || 60);
+          showToast("A new verification code has been requested.");
+        } else {
+          showToast(data.error || "Failed to resend code");
+          if (res.status === 429) {
+            startResendCooldown(60);
+          }
+        }
+      } catch (e) {
+        showToast("Network error resending code");
+        resendBtn.disabled = false;
+        resendBtn.innerText = "Resend Code";
+      }
     }
 
     async function handleVerifyOtp() {
-      const phone = document.getElementById("authPhoneInput").value.trim();
+      const phone = document.getElementById("authPhoneInput").value.trim().replace(/\s+/g, "").replace(/-/g, "");
       const otp = document.getElementById("authOtpInput").value.trim();
 
-      if (!otp || otp.length < 6) {
-        showToast("Please enter the 6-digit verification code");
+      const errorNotice = document.getElementById("otpErrorNotice");
+      if (errorNotice) {
+        errorNotice.style.display = "none";
+        errorNotice.innerText = "";
+      }
+
+      if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
+        if (errorNotice) {
+          errorNotice.style.display = "block";
+          errorNotice.innerText = "Please enter the complete 6-digit verification code.";
+        }
+        showToast("Please enter the complete 6-digit verification code");
         return;
       }
 
@@ -2738,17 +2811,27 @@ Please call 112 / Police and reach me immediately.
         });
         const data = await res.json();
 
-        if (data.status === "success") {
+        if (res.ok && data.status === "success") {
           currentUser = data.user;
           emergencyContacts = data.emergency_contacts || [];
+          clearInterval(resendTimer);
           closeAuthModal();
           updateUserUi();
-          showToast("Signed in successfully. Welcome to Meyyurai!");
+          showToast("Authentication successful. Welcome to Meyyurai!");
         } else {
-          showToast(data.error || "Invalid OTP code");
+          const errMsg = data.error || "Verification failed.";
+          if (errorNotice) {
+            errorNotice.style.display = "block";
+            errorNotice.innerText = errMsg;
+          }
+          showToast(errMsg);
         }
       } catch (err) {
         console.error("Verify OTP error:", err);
+        if (errorNotice) {
+          errorNotice.style.display = "block";
+          errorNotice.innerText = "Network error during verification. Please try again.";
+        }
         showToast("Verification failed");
       } finally {
         btn.innerText = "Verify & Access Portal";
@@ -2756,20 +2839,36 @@ Please call 112 / Police and reach me immediately.
       }
     }
 
+    async function handleLogout() {
+      try {
+        await fetch("/api/auth/logout", { method: "POST" });
+        currentUser = null;
+        emergencyContacts = [];
+        updateUserUi();
+        showToast("Signed out successfully.");
+        switchTab("dashboard");
+      } catch (err) {
+        console.error("Logout error:", err);
+      }
+    }
+
     async function checkAuthStatus() {
       try {
         const res = await fetch("/api/auth/me");
         const data = await res.json();
-        if (data.status === "authenticated") {
+        if (data.status === "authenticated" && data.user) {
           currentUser = data.user;
           emergencyContacts = data.emergency_contacts || [];
           updateUserUi();
         } else {
-          // Load default contacts from local test state
+          currentUser = null;
           loadDefaultContacts();
+          updateUserUi();
         }
       } catch (e) {
+        currentUser = null;
         loadDefaultContacts();
+        updateUserUi();
       }
     }
 
@@ -2783,9 +2882,14 @@ Please call 112 / Police and reach me immediately.
     }
 
     function updateUserUi() {
+      const headerName = document.getElementById("headerUserName");
+      const headerAvatar = document.getElementById("headerUserAvatar");
+      const logoutBtn = document.getElementById("logoutBtn");
+
       if (currentUser) {
-        document.getElementById("headerUserName").innerText = currentUser.name || "Citizen";
-        document.getElementById("headerUserAvatar").innerText = (currentUser.name || "C")[0].toUpperCase();
+        headerName.innerText = currentUser.name || "Citizen";
+        headerAvatar.innerText = (currentUser.name || "C")[0].toUpperCase();
+        if (logoutBtn) logoutBtn.style.display = "inline-flex";
 
         document.getElementById("profName").value = currentUser.name || "";
         document.getElementById("profPhone").value = currentUser.phone || "";
@@ -2794,6 +2898,18 @@ Please call 112 / Police and reach me immediately.
         document.getElementById("profState").value = currentUser.state || "Tamil Nadu";
         document.getElementById("profBlood").value = currentUser.blood_group || "";
         document.getElementById("profMedical").value = currentUser.medical_notes || "";
+      } else {
+        headerName.innerText = "Citizen Sign In";
+        headerAvatar.innerText = "C";
+        if (logoutBtn) logoutBtn.style.display = "none";
+
+        document.getElementById("profName").value = "";
+        document.getElementById("profPhone").value = "";
+        document.getElementById("profEmail").value = "";
+        document.getElementById("profCity").value = "Chennai";
+        document.getElementById("profState").value = "Tamil Nadu";
+        document.getElementById("profBlood").value = "";
+        document.getElementById("profMedical").value = "";
       }
 
       const armedCount = document.getElementById("contactsArmedCount");
@@ -2808,13 +2924,18 @@ Please call 112 / Police and reach me immediately.
 
     async function saveProfile(e) {
       e.preventDefault();
+      if (!currentUser) {
+        showToast("Please sign in with your mobile number to update your profile.");
+        openAuthModal();
+        return;
+      }
+
       const saveBtn = document.getElementById("saveProfBtn");
       saveBtn.innerText = "Saving Profile...";
       saveBtn.disabled = true;
 
       const payload = {
         name: document.getElementById("profName").value.trim(),
-        phone: document.getElementById("profPhone").value.trim(),
         email: document.getElementById("profEmail").value.trim(),
         city: document.getElementById("profCity").value.trim(),
         state: document.getElementById("profState").value.trim(),
@@ -2849,6 +2970,11 @@ Please call 112 / Police and reach me immediately.
     // EMERGENCY CONTACTS CRUD
     // =========================================================================
     function openAddContactModal() {
+      if (!currentUser) {
+        showToast("Please sign in with your mobile number to manage emergency contacts.");
+        openAuthModal();
+        return;
+      }
       document.getElementById("addContactModal").classList.add("active");
     }
 
@@ -2858,6 +2984,12 @@ Please call 112 / Police and reach me immediately.
 
     async function handleAddContact(e) {
       e.preventDefault();
+      if (!currentUser) {
+        showToast("Please sign in with your mobile number first.");
+        openAuthModal();
+        return;
+      }
+
       const name = document.getElementById("newContactName").value.trim();
       const phone = document.getElementById("newContactPhone").value.trim();
       const relationship = document.getElementById("newContactRelation").value;
@@ -2873,8 +3005,7 @@ Please call 112 / Police and reach me immediately.
           name,
           phone,
           relationship,
-          is_primary,
-          user_phone: currentUser ? currentUser.phone : ""
+          is_primary
         };
 
         const res = await fetch("/api/emergency-contacts", {
@@ -2902,11 +3033,14 @@ Please call 112 / Police and reach me immediately.
     }
 
     async function deleteContact(contactId) {
+      if (!currentUser) {
+        showToast("Please sign in first.");
+        return;
+      }
       if (!confirm("Are you sure you want to remove this emergency contact?")) return;
 
-      const userPhone = currentUser ? `?phone=${currentUser.phone}` : "";
       try {
-        const res = await fetch(`/api/emergency-contacts/${contactId}${userPhone}`, {
+        const res = await fetch(`/api/emergency-contacts/${contactId}`, {
           method: "DELETE"
         });
         const data = await res.json();
@@ -2914,11 +3048,12 @@ Please call 112 / Police and reach me immediately.
           emergencyContacts = data.contacts || [];
           updateUserUi();
           showToast("Emergency contact removed");
+        } else {
+          showToast(data.error || "Failed to remove contact");
         }
       } catch (e) {
-        emergencyContacts = emergencyContacts.filter(c => c.id !== contactId);
-        updateUserUi();
-        showToast("Contact removed locally");
+        console.error("Delete contact error:", e);
+        showToast("Failed to remove contact");
       }
     }
 

@@ -1,6 +1,7 @@
 import sqlite3
 import os
-import random
+import secrets
+import hashlib
 import time
 from pathlib import Path
 from datetime import datetime
@@ -34,12 +35,22 @@ def init_db():
         )
     """)
 
-    # OTP codes table
+    # Check and migrate otp_codes schema to production standard if needed
+    cursor.execute("PRAGMA table_info(otp_codes)")
+    existing_cols = [col["name"] for col in cursor.fetchall()]
+    if existing_cols and ("otp_hash" not in existing_cols or "salt" not in existing_cols):
+        cursor.execute("DROP TABLE otp_codes")
+
+    # Production OTP codes table (salted hashes, attempt tracking, cooldowns)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS otp_codes (
             phone TEXT PRIMARY KEY,
-            otp TEXT NOT NULL,
+            otp_hash TEXT NOT NULL,
+            salt TEXT NOT NULL,
+            attempts INTEGER DEFAULT 0,
+            max_attempts INTEGER DEFAULT 5,
             expires_at INTEGER NOT NULL,
+            resend_available_at INTEGER NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -77,84 +88,148 @@ def init_db():
     conn.close()
     print("Database initialized successfully at", DB_PATH)
 
-def generate_otp_for_phone(phone: str) -> str:
-    """Generate a 6-digit OTP code valid for 5 minutes."""
-    phone = phone.strip().replace(" ", "").replace("-", "")
-    if phone.startswith("+91"):
-        phone = phone[3:]
-    
-    # 6-digit random code
-    otp = str(random.randint(100000, 999999))
-    expires_at = int(time.time()) + 300  # 5 minutes expiry
+def generate_otp_for_phone(phone: str):
+    """
+    Generate a cryptographically secure 6-digit OTP code valid for 5 minutes.
+    Enforces a 60-second cooldown between resends.
+    Stores only salted SHA-256 hash in SQLite.
+    Returns: (plain_otp, error_message, status_code)
+    """
+    clean_phone = phone.strip().replace(" ", "").replace("-", "")
+    if clean_phone.startswith("+91"):
+        clean_phone = clean_phone[3:]
+    elif clean_phone.startswith("91") and len(clean_phone) > 10:
+        clean_phone = clean_phone[2:]
+
+    if len(clean_phone) != 10 or not clean_phone.isdigit():
+        return None, "Please provide a valid 10-digit Indian mobile number.", 400
+
+    now = int(time.time())
 
     conn = get_connection()
     cursor = conn.cursor()
+
+    # Check for active cooldown / resend limit
+    cursor.execute("SELECT resend_available_at, expires_at FROM otp_codes WHERE phone = ?", (clean_phone,))
+    existing = cursor.fetchone()
+    if existing:
+        resend_at = existing["resend_available_at"]
+        if now < resend_at:
+            wait_seconds = resend_at - now
+            conn.close()
+            return None, f"Please wait {wait_seconds} second(s) before requesting a new verification code.", 429
+
+    # Generate 6-digit cryptographically secure OTP
+    otp = "".join(secrets.choice("0123456789") for _ in range(6))
+    salt = secrets.token_hex(16)
+    otp_hash = hashlib.sha256(f"{salt}:{otp}".encode("utf-8")).hexdigest()
+
+    expires_at = now + 300            # 5 minutes expiry
+    resend_available_at = now + 60    # 60 seconds cooldown
+
     cursor.execute("""
-        INSERT INTO otp_codes (phone, otp, expires_at, created_at)
-        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        INSERT INTO otp_codes (phone, otp_hash, salt, attempts, max_attempts, expires_at, resend_available_at, created_at)
+        VALUES (?, ?, ?, 0, 5, ?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(phone) DO UPDATE SET
-            otp = excluded.otp,
+            otp_hash = excluded.otp_hash,
+            salt = excluded.salt,
+            attempts = 0,
+            max_attempts = 5,
             expires_at = excluded.expires_at,
+            resend_available_at = excluded.resend_available_at,
             created_at = CURRENT_TIMESTAMP
-    """, (phone, otp, expires_at))
+    """, (clean_phone, otp_hash, salt, expires_at, resend_available_at))
+
     conn.commit()
     conn.close()
 
-    return otp
+    return otp, None, 200
 
-def verify_phone_otp(phone: str, otp: str):
-    """Verify phone and OTP code. If valid, retrieve or create user."""
-    phone = phone.strip().replace(" ", "").replace("-", "")
-    if phone.startswith("+91"):
-        phone = phone[3:]
-    otp = otp.strip()
+def verify_phone_otp(phone: str, submitted_otp: str):
+    """
+    Verify phone and submitted OTP code with rate-limiting & constant-time hash comparison.
+    - No bypass codes or hardcoded OTPs allowed.
+    - Enforces 5 maximum attempts.
+    - Invalidates code immediately upon success or max attempts exceeded.
+    Returns: (user_dict, error_message, status_code)
+    """
+    clean_phone = phone.strip().replace(" ", "").replace("-", "")
+    if clean_phone.startswith("+91"):
+        clean_phone = clean_phone[3:]
+    elif clean_phone.startswith("91") and len(clean_phone) > 10:
+        clean_phone = clean_phone[2:]
+
+    code = submitted_otp.strip()
+    if not code or len(code) != 6 or not code.isdigit():
+        return None, "Verification code must be exactly 6 digits.", 400
+
+    now = int(time.time())
 
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT otp, expires_at FROM otp_codes WHERE phone = ?", (phone,))
+    cursor.execute("""
+        SELECT otp_hash, salt, attempts, max_attempts, expires_at
+        FROM otp_codes
+        WHERE phone = ?
+    """, (clean_phone,))
     record = cursor.fetchone()
 
     if not record:
         conn.close()
-        return None, "No OTP requested for this phone number."
+        return None, "No active verification code found for this phone number. Please request a new one.", 400
 
-    stored_otp = record["otp"]
+    stored_hash = record["otp_hash"]
+    salt = record["salt"]
+    attempts = record["attempts"]
+    max_attempts = record["max_attempts"]
     expires_at = record["expires_at"]
 
-    if int(time.time()) > expires_at:
+    # 1. Check expiration
+    if now > expires_at:
+        cursor.execute("DELETE FROM otp_codes WHERE phone = ?", (clean_phone,))
+        conn.commit()
         conn.close()
-        return None, "OTP has expired. Please request a new one."
+        return None, "Verification code has expired. Please request a new one.", 400
 
-    # Allow testing OTP 123456 or match stored
-    if otp != stored_otp and otp != "123456":
+    # 2. Check previous failed attempts
+    if attempts >= max_attempts:
+        cursor.execute("DELETE FROM otp_codes WHERE phone = ?", (clean_phone,))
+        conn.commit()
         conn.close()
-        return None, "Invalid OTP code. Please enter the correct code."
+        return None, "Maximum verification attempts exceeded. For security, please request a new code.", 429
 
-    # Remove used OTP
-    cursor.execute("DELETE FROM otp_codes WHERE phone = ?", (phone,))
+    # 3. Constant-time hash comparison (NO bypasses!)
+    candidate_hash = hashlib.sha256(f"{salt}:{code}".encode("utf-8")).hexdigest()
+    is_valid = secrets.compare_digest(stored_hash, candidate_hash)
 
-    # Check if user already exists
-    cursor.execute("SELECT * FROM users WHERE phone = ?", (phone,))
+    if not is_valid:
+        new_attempts = attempts + 1
+        remaining = max_attempts - new_attempts
+        if remaining <= 0:
+            cursor.execute("DELETE FROM otp_codes WHERE phone = ?", (clean_phone,))
+            conn.commit()
+            conn.close()
+            return None, "Maximum verification attempts exceeded. For security, this code has been invalidated. Please request a new code.", 429
+        else:
+            cursor.execute("UPDATE otp_codes SET attempts = ? WHERE phone = ?", (new_attempts, clean_phone))
+            conn.commit()
+            conn.close()
+            return None, f"Invalid verification code. {remaining} attempt(s) remaining.", 400
+
+    # 4. Success: Invalidate used OTP immediately
+    cursor.execute("DELETE FROM otp_codes WHERE phone = ?", (clean_phone,))
+
+    # Retrieve or create user record
+    cursor.execute("SELECT * FROM users WHERE phone = ?", (clean_phone,))
     user = cursor.fetchone()
 
     if not user:
         cursor.execute("""
             INSERT INTO users (phone, name, email, city, state)
             VALUES (?, ?, ?, ?, ?)
-        """, (phone, "Citizen", f"user_{phone[-4:]}@meyyurai.org", "Chennai", "Tamil Nadu"))
+        """, (clean_phone, "Citizen", f"user_{clean_phone[-4:]}@meyyurai.org", "Chennai", "Tamil Nadu"))
         user_id = cursor.lastrowid
-
-        # Insert default sample emergency contacts for instant emergency demonstration
-        cursor.execute("""
-            INSERT INTO emergency_contacts (user_id, contact_name, contact_phone, relationship, is_primary)
-            VALUES (?, ?, ?, ?, 1)
-        """, (user_id, "Mother / Family Guardian", "9840123456", "Parent",))
-        cursor.execute("""
-            INSERT INTO emergency_contacts (user_id, contact_name, contact_phone, relationship, is_primary)
-            VALUES (?, ?, ?, ?, 0)
-        """, (user_id, "Trusted Friend / Advocate", "9840987654", "Friend",))
-
         conn.commit()
         cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
         user = cursor.fetchone()
@@ -163,7 +238,7 @@ def verify_phone_otp(phone: str, otp: str):
 
     user_dict = dict(user)
     conn.close()
-    return user_dict, None
+    return user_dict, None, 200
 
 def get_user_by_id(user_id: int):
     """Fetch user by primary key."""
