@@ -2768,7 +2768,13 @@ Please call 112 / Police and reach me immediately.
 
         // 1. Server SMS Delivery Status Feedback
         const serverNotice = document.getElementById("modalServerSmsNotice");
-        if (data.server_dispatch) {
+        if (!res.ok || data.status === "error") {
+          serverNotice.innerHTML = `
+            <div style="background: #fee2e2; border: 1px solid #fca5a5; border-left: 4px solid var(--brand-red); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.82rem; color: #991b1b; line-height: 1.45;">
+              <strong>DISPATCH NOTICE:</strong> ${data.error || "Automated server broadcast encountered an issue."} Please tap <strong>DIAL 112</strong> immediately to connect with police.
+            </div>
+          `;
+        } else if (data.server_dispatch) {
           const sd = data.server_dispatch;
           if (sd.status === "NOT_CONFIGURED") {
             serverNotice.innerHTML = `
@@ -2857,6 +2863,15 @@ Please call 112 / Police and reach me immediately.
         console.error("SOS trigger error:", err);
         if (dispatchingBox) dispatchingBox.style.display = "none";
         dispatchedBox.style.display = "block";
+        const serverNotice = document.getElementById("modalServerSmsNotice");
+        if (serverNotice) {
+          serverNotice.innerHTML = `
+            <div style="background: #fee2e2; border: 1px solid #fca5a5; border-left: 4px solid var(--brand-red); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.82rem; color: #991b1b; line-height: 1.45;">
+              <strong>DISPATCH ERROR:</strong> Could not connect to dispatch server (${err.message || 'Network failure'}). Tap <strong>DIAL 112</strong> immediately.
+            </div>
+          `;
+        }
+        lucide.createIcons();
         showToast("Network dispatch error. Dial 112 directly.");
       }
     }
