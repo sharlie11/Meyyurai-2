@@ -2528,6 +2528,14 @@ Please call 112 / Police and reach me immediately.
       updateGpsBadgeUI();
       checkAuthStatus();
       loadResources();
+
+      // Listen for network connectivity changes
+      window.addEventListener("offline", () => {
+        showToast("⚠️ Device is offline. Tap 'DIAL 112' for immediate cellular emergency call.");
+      });
+      window.addEventListener("online", () => {
+        showToast("🌐 Connection restored. Legal services and emergency dispatch are online.");
+      });
     });
 
     // Tab Navigation (Syncs both Desktop and Mobile bottom navigation)
