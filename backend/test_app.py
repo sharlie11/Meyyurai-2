@@ -10,7 +10,7 @@ backend_dir = Path(__file__).resolve().parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-from app import app
+from app import app, search_legal_knowledge, map_officers_for_category, classify_legal_query
 import db
 import sms_service
 
@@ -648,3 +648,366 @@ def test_draft_complaint(client):
     draft = data_draft["complaintDraft"]
     assert "FORMAL COMPLAINT" in draft
     assert "Citizen Murthy" in draft
+
+
+# ============================================================================
+# PHASE 4A — LEGAL RETRIEVAL & CLASSIFICATION REGRESSION TEST SUITE
+# ============================================================================
+
+def test_regression_1_cyber_financial_fraud(client):
+    """
+    Case 1: Cyber financial fraud.
+    Must classify as Cyber Rights, return IT Act provisions, and route to Cyber Crime Police / 1930.
+    Must NOT classify as Women's Rights or route to AWPS.
+    """
+    q = "Someone stole 50000 rupees from my bank account via fraudulent online link and UPI scam"
+    res = client.post("/ask", json={"question": q})
+    assert res.status_code == 200
+    data = json.loads(res.data)
+
+    assert data["category"] == "Cyber Rights & Online Safety"
+    assert "Women" not in data["category"]
+
+    # Verify laws
+    assert len(data["laws"]) > 0
+    law_acts = [l["act"] for l in data["laws"]]
+    assert any("Information Technology Act" in act for act in law_acts)
+    assert not any("Constitution of India" in act for act in law_acts)
+
+    # Verify officers
+    designations = [o["designation"] for o in data["whom_to_meet"]]
+    assert any("Cyber Crime Police Station" in d for d in designations)
+    assert any("1930" in d for d in designations)
+    assert not any("AWPS" in d for d in designations)
+
+
+def test_regression_2_landlord_changing_locks(client):
+    """
+    Case 2: Landlord illegally changing the locks.
+    Must classify as Property Rights & Land Laws, return Rent Authority / Police SHO.
+    Must NOT classify as Women's Rights or route to AWPS.
+    """
+    q = "My landlord illegally changed the locks of my rented flat and threw my things out without notice"
+    res = client.post("/ask", json={"question": q})
+    assert res.status_code == 200
+    data = json.loads(res.data)
+
+    assert data["category"] == "Property Rights, Registration & Land Laws"
+    assert "Women" not in data["category"]
+
+    # Verify laws
+    assert len(data["laws"]) > 0
+    law_acts = [l["act"] for l in data["laws"]]
+    assert any("Registration Act" in act for act in law_acts)
+    assert not any("Article 15(3)" in l.get("section", "") for l in data["laws"])
+
+    # Verify officers
+    designations = [o["designation"] for o in data["whom_to_meet"]]
+    assert any("Rent Authority" in d or "Rent Court" in d for d in designations)
+    assert not any("AWPS" in d for d in designations)
+    assert not any("Social Welfare Officer" in d for d in designations)
+
+
+def test_regression_3_defective_product_consumer_complaint(client):
+    """
+    Case 3: Defective product or consumer complaint.
+    Must classify as Consumer Rights, return Consumer Protection Act 2019, and route to DCDRC / 1915.
+    Must NOT route to Cyber Crime Police Station merely because "online" was in the sentence.
+    """
+    q = "I bought a defective refrigerator from an online seller and they refuse refund or warranty replacement"
+    res = client.post("/ask", json={"question": q})
+    assert res.status_code == 200
+    data = json.loads(res.data)
+
+    assert data["category"] == "Consumer Rights & Complaint Portals"
+    assert "Cyber" not in data["category"]
+    assert "Women" not in data["category"]
+
+    # Verify laws
+    assert len(data["laws"]) > 0
+    law_acts = [l["act"] for l in data["laws"]]
+    assert any("Consumer Protection Act" in act for act in law_acts)
+
+    # Verify officers
+    designations = [o["designation"] for o in data["whom_to_meet"]]
+    assert any("Consumer Commission" in d or "DCDRC" in d for d in designations)
+    assert any("1915" in d for d in designations)
+    assert not any("Cyber Crime Police Station" in d for d in designations)
+
+
+def test_regression_4_workplace_harassment(client):
+    """
+    Case 4: Workplace harassment.
+    Must classify as Women Rights, prioritize POSH Act 2013 and BNS Sec 75 (Sexual Harassment).
+    Must return ICC / AWPS officers, NOT Article 15(3) welfare quotas.
+    """
+    q = "Colleague and boss are sexually harassing me at my office workplace with unwanted touching"
+    res = client.post("/ask", json={"question": q})
+    assert res.status_code == 200
+    data = json.loads(res.data)
+
+    assert data["category"] == "Women Rights, Safety Laws & Subsidies"
+
+    # Verify laws
+    assert len(data["laws"]) > 0
+    law_sections = [l["section"] for l in data["laws"]]
+    law_acts = [l["act"] for l in data["laws"]]
+    assert any("POSH" in act or "Sexual Harassment" in sec for act, sec in zip(law_acts, law_sections))
+    # Ensure Article 15(3) is not the top law
+    assert "Article 15(3)" not in data["laws"][0]["section"]
+
+    # Verify officers
+    designations = [o["designation"] for o in data["whom_to_meet"]]
+    assert any("Internal Complaints Committee" in d or "ICC" in d for d in designations)
+
+
+def test_regression_5_domestic_violence(client):
+    """
+    Case 5: Domestic violence.
+    Must classify as Women Rights, return Protection of Women from DV Act / BNS Sec 85 / Dowry Act.
+    Must return Protection Officer / DSWO and AWPS.
+    """
+    q = "My husband and in-laws beat me and demand dowry at home"
+    res = client.post("/ask", json={"question": q})
+    assert res.status_code == 200
+    data = json.loads(res.data)
+
+    assert data["category"] == "Women Rights, Safety Laws & Subsidies"
+
+    # Verify laws
+    assert len(data["laws"]) > 0
+    law_sections = [l["section"] for l in data["laws"]]
+    assert any("Cruelty" in sec or "Domestic Abuse" in sec or "Dowry" in sec for sec in law_sections)
+
+    # Verify officers
+    designations = [o["designation"] for o in data["whom_to_meet"]]
+    assert any("Protection Officer" in d or "DSWO" in d for d in designations)
+    assert any("AWPS" in d for d in designations)
+
+
+def test_regression_6_labour_wage_non_payment(client):
+    """
+    Case 6: Labour wage non-payment.
+    Must classify as Employee Rights & Labour Welfare, return Code on Wages / Payment of Wages Act.
+    Must route to Labour Conciliation Officer, NOT Women's Rights.
+    """
+    q = "My employer has not paid my salary and wages for the last 4 months"
+    res = client.post("/ask", json={"question": q})
+    assert res.status_code == 200
+    data = json.loads(res.data)
+
+    assert data["category"] == "Employee Rights & Labour Welfare"
+    assert "Women" not in data["category"]
+
+    # Verify laws
+    assert len(data["laws"]) > 0
+    law_acts = [l["act"] for l in data["laws"]]
+    assert any("Code on Wages" in act or "Payment of Wages" in act for act in law_acts)
+
+    # Verify officers
+    designations = [o["designation"] for o in data["whom_to_meet"]]
+    assert any("Labour Conciliation Officer" in d or "Labour Commissioner" in d for d in designations)
+
+
+def test_regression_7_property_ownership_dispute(client):
+    """
+    Case 7: Property ownership dispute.
+    Must classify as Property Rights, return Registration Act 1908, and route to Tahsildar / SRO.
+    """
+    q = "Boundary encroachment and disputed title deed on my ancestral land with neighbor"
+    res = client.post("/ask", json={"question": q})
+    assert res.status_code == 200
+    data = json.loads(res.data)
+
+    assert data["category"] == "Property Rights, Registration & Land Laws"
+
+    # Verify laws
+    assert len(data["laws"]) > 0
+    assert any("Registration Act" in l["act"] for l in data["laws"])
+
+    # Verify officers
+    designations = [o["designation"] for o in data["whom_to_meet"]]
+    assert any("Tahsildar" in d for d in designations)
+
+
+def test_regression_8_child_safety_concern(client):
+    """
+    Case 8: Child safety concern.
+    Must classify as Child Rights & Education Protection, return POCSO Act, and route to CWC / Childline 1098.
+    Must NOT classify as Family Rights (custody/maintenance) or Women's Rights.
+    """
+    q = "A minor child is being forced into child labour and beaten at a local factory"
+    res = client.post("/ask", json={"question": q})
+    assert res.status_code == 200
+    data = json.loads(res.data)
+
+    assert data["category"] == "Child Rights & Education Protection"
+    assert "Family" not in data["category"]
+    assert "Women" not in data["category"]
+
+    # Verify laws
+    assert len(data["laws"]) > 0
+    assert any("POCSO" in l["act"] for l in data["laws"])
+
+    # Verify officers
+    designations = [o["designation"] for o in data["whom_to_meet"]]
+    assert any("Child Welfare Committee" in d or "CWC" in d for d in designations)
+    assert any("1098" in d for d in designations)
+
+
+def test_regression_9_vague_query_insufficient_details(client):
+    """
+    Case 9: A vague query with insufficient details.
+    Must return low confidence / safe fallback, ask a clarifying question, and provide DLSA guidance.
+    Must NOT arbitrarily match Women's Rights or first database entry.
+    """
+    q = "I need help with something that happened yesterday"
+    res = client.post("/ask", json={"question": q})
+    assert res.status_code == 200
+    data = json.loads(res.data)
+
+    assert data["category"] == "Clarification Needed / General Guidance"
+    assert "Women" not in data["category"]
+    assert "Preliminary Guidance" in data["situation"]
+    assert "clarify" in data["situation"].lower() or "context" in data["situation"].lower()
+
+    # Ensure no arbitrary criminal section is returned
+    for l in data["laws"]:
+        assert "Not applicable" in l.get("punishment", "")
+
+    # Officers must be general legal aid (DLSA), NOT AWPS
+    designations = [o["designation"] for o in data["whom_to_meet"]]
+    assert any("DLSA" in d or "Legal Aid" in d for d in designations)
+    assert not any("AWPS" in d for d in designations)
+
+
+def test_regression_10_generic_words_dominating(client):
+    """
+    Case 10: A query containing generic words such as 'and', 'from', 'with', 'the' that must not dominate the score.
+    Must NOT inflate score or match Women's Rights. Must return safe general clarification.
+    """
+    # 1. Pure stop words
+    q1 = "and from with the having between under into for about this that"
+    res1 = client.post("/ask", json={"question": q1})
+    assert res1.status_code == 200
+    data1 = json.loads(res1.data)
+    assert data1["category"] == "Clarification Needed / General Guidance"
+    assert "Women" not in data1["category"]
+
+    # 2. Conversational query dominated by stop words
+    q2 = "the issue came from there and with that person and this and that also happened"
+    res2 = client.post("/ask", json={"question": q2})
+    assert res2.status_code == 200
+    data2 = json.loads(res2.data)
+    assert data2["category"] == "Clarification Needed / General Guidance"
+    assert "Women" not in data2["category"]
+
+
+def test_regression_11_out_of_domain_query(client):
+    """
+    Out-of-domain test: A query about baking a cake.
+    Must NOT return Women's Rights, criminal laws, or AWPS officers.
+    Must state clearly that Meyyurai handles Indian statutory legal issues.
+    """
+    q = "How do I bake a chocolate cake at home?"
+    res = client.post("/ask", json={"question": q})
+    assert res.status_code == 200
+    data = json.loads(res.data)
+
+    assert data["category"] == "Clarification Needed / General Guidance"
+    assert "non-legal" in data["situation"].lower() or "clarification" in data["category"].lower()
+    assert "Women" not in data["category"]
+
+    # Ensure no criminal laws or AWPS officers
+    designations = [o["designation"] for o in data["whom_to_meet"]]
+    assert not any("AWPS" in d for d in designations)
+
+
+def test_regression_12_ambiguous_contract_query(client):
+    """
+    Ambiguous query test: 'I signed a contract and now there is a problem'.
+    Could be employment, tenancy, consumer, or civil.
+    Must flag low confidence and ask clarifying questions instead of guessing.
+    """
+    q = "I signed an agreement with someone and now we have a dispute"
+    res = client.post("/ask", json={"question": q})
+    assert res.status_code == 200
+    data = json.loads(res.data)
+
+    assert data["category"] == "Clarification Needed / General Guidance"
+    assert "clarif" in data["situation"].lower() or "context" in data["situation"].lower()
+
+
+def test_regression_13_emergency_immediate_safety_guidance(client):
+    """
+    Emergency query test: Active physical danger.
+    Must return immediate emergency guidance, dial 112, without waiting for complex classification.
+    """
+    q = "Someone is breaking into my door right now please help me save me!"
+    res = client.post("/ask", json={"question": q})
+    assert res.status_code == 200
+    data = json.loads(res.data)
+
+    assert data["status"] == "emergency_guidance"
+    assert data["category"] == "Immediate Emergency & Safety Guidance"
+    assert "112" in data["situation"] or "112" in str(data["whom_to_meet"])
+    assert "112" in str(data["support"])
+
+    designations = [o["designation"] for o in data["whom_to_meet"]]
+    assert any("112" in d or "Mobile Patrol" in d or "SHO" in d for d in designations)
+
+
+def test_search_legal_knowledge_direct_isolation():
+    """Direct unit testing of search_legal_knowledge function for precision and isolation."""
+    # Cyber query: Only cyber laws returned
+    cyber_matches = search_legal_knowledge("Phishing link OTP cyber fraud debit 25000", max_results=3)
+    assert len(cyber_matches) > 0
+    assert all(m["category_slug"] == "cyber" for m in cyber_matches)
+
+    # Property query: Only property laws returned
+    property_matches = search_legal_knowledge("Landlord eviction rent locks flat tenant", max_results=3)
+    assert len(property_matches) > 0
+    assert all(m["category_slug"] == "property" for m in property_matches)
+
+    # Consumer query: Only consumer laws returned
+    consumer_matches = search_legal_knowledge("Defective smartphone warranty refund refusal", max_results=3)
+    assert len(consumer_matches) > 0
+    assert all(m["category_slug"] == "consumer" for m in consumer_matches)
+
+    # Vague query: Empty list returned (low confidence)
+    vague_matches = search_legal_knowledge("I need help with something yesterday", max_results=3)
+    assert len(vague_matches) == 0
+
+    # Stop words query: Empty list returned
+    stop_matches = search_legal_knowledge("and from with the having between under", max_results=3)
+    assert len(stop_matches) == 0
+
+
+def test_draft_complaint_and_action_plan_with_safe_classification(client):
+    """Ensure /draft-complaint and /action-plan use grounded classification without hallucination."""
+    # 1. Draft complaint for cyber fraud
+    res_draft_cyber = client.post("/draft-complaint", json={
+        "allegations": "Unauthorized debit of 50000 rupees through phishing link and UPI scam",
+        "category": "Cyber Financial Crime"
+    })
+    assert res_draft_cyber.status_code == 200
+    data_cyber = json.loads(res_draft_cyber.data)
+    assert "Information Technology Act" in data_cyber["sectionsCited"]
+
+    # 2. Draft complaint for vague query
+    res_draft_vague = client.post("/draft-complaint", json={
+        "allegations": "Something happened yesterday and with that",
+        "category": "Unclear Issue"
+    })
+    assert res_draft_vague.status_code == 200
+    data_vague = json.loads(res_draft_vague.data)
+    assert "factual verification" in data_vague["sectionsCited"].lower()
+
+    # 3. Action plan for landlord eviction
+    res_plan = client.post("/action-plan", json={
+        "issue": "My landlord changed the locks of my flat without notice"
+    })
+    assert res_plan.status_code == 200
+    data_plan = json.loads(res_plan.data)
+    assert "Property" in data_plan["category"]
+
