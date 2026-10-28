@@ -41,16 +41,18 @@ export const Route = createFileRoute("/_authenticated/resources")({
 
 const categories = [
   { id: "all", label: "All Services", icon: Globe },
-  { id: "lawyer", label: "Lawyers & Advocates", icon: Briefcase },
-  { id: "ngo", label: "NGOs", icon: HandHeart },
+  { id: "portal", label: "Complaint Portals", icon: Building2 },
+  { id: "authority", label: "Official Authorities", icon: Landmark },
+  { id: "scheme", label: "Govt Schemes", icon: Award },
   { id: "legal", label: "Legal Aid & DLSA", icon: Scale },
-  { id: "hospital", label: "Healthcare & Hospitals", icon: Hospital },
-  { id: "mental", label: "Mental Health", icon: Brain },
+  { id: "lawyer", label: "Lawyers & Advocates", icon: Briefcase },
   { id: "police", label: "Police & Emergency", icon: Shield },
   { id: "women", label: "Women Support", icon: Users },
   { id: "child", label: "Child Protection", icon: Baby },
-  { id: "gov", label: "Government Portals", icon: Landmark },
+  { id: "hospital", label: "Healthcare & Hospitals", icon: Hospital },
+  { id: "mental", label: "Mental Health", icon: Brain },
   { id: "shelter", label: "Shelters & Rehab", icon: Home },
+  { id: "ngo", label: "NGOs", icon: HandHeart },
 ] as const;
 
 type Cat = (typeof categories)[number]["id"];
@@ -73,7 +75,195 @@ export type Resource = {
 };
 
 const verifiedDirectoryResources: Resource[] = [
-  // --- VERIFIED LAWYERS & LEGAL ADVOCATES ---
+  // --- 1. OFFICIAL STATUTORY COMPLAINT PORTALS ---
+  {
+    name: "National Consumer Helpline (NCH / INGRAM Grievance Portal)",
+    cat: "portal",
+    badge: "Dept of Consumer Affairs, GoI",
+    distance: "Nationwide Central Portal",
+    phone: "1915",
+    website: "https://consumerhelpline.gov.in",
+    address: "Department of Consumer Affairs, Krishi Bhawan, New Delhi - 110001 | INGRAM Integrated Grievance Redressal",
+    operating_hours: "8:00 AM - 8:00 PM (Mon-Sat, Toll-Free 1915)",
+  },
+  {
+    name: "e-Daakhil Consumer Disputes Redressal Portal",
+    cat: "portal",
+    badge: "National Consumer Commission (NCDRC)",
+    distance: "Nationwide Online Filing",
+    phone: "011-24300614",
+    website: "https://edaakhil.nic.in",
+    address: "National Consumer Disputes Redressal Commission, Upbhokta Nyay Bhawan, INA, New Delhi - 110023",
+    operating_hours: "24x7 Online Filing for District, State & National Commissions",
+  },
+  {
+    name: "National Cyber Crime Reporting Portal (I4C)",
+    cat: "portal",
+    badge: "Ministry of Home Affairs (MHA)",
+    distance: "Nationwide Cyber Cell",
+    phone: "1930",
+    website: "https://cybercrime.gov.in",
+    address: "Indian Cyber Crime Coordination Centre (I4C), MHA, New Delhi | Immediate Financial Freeze & FIR",
+    operating_hours: "24x7 Financial Fraud Helpline (Dial 1930 within Golden Hour)",
+  },
+  {
+    name: "CPGRAMS (Centralized Public Grievance Redress and Monitoring System)",
+    cat: "portal",
+    badge: "DARPG Central Grievance Portal",
+    distance: "All Central & State Ministries",
+    phone: "1800-11-0031",
+    website: "https://pgportal.gov.in",
+    address: "Department of Administrative Reforms and Public Grievances, Sardar Patel Bhawan, New Delhi",
+    operating_hours: "24x7 Citizen Grievance Portal with 30-Day Resolution Mandate",
+  },
+  {
+    name: "SHe-Box (Sexual Harassment electronic Box - Workplace Safety)",
+    cat: "portal",
+    badge: "Ministry of Women & Child Development",
+    distance: "Nationwide POSH Redressal",
+    phone: "011-23386423",
+    website: "https://shebox.wcd.gov.in",
+    address: "Ministry of Women and Child Development, Shastri Bhawan, New Delhi | POSH Act Internal Committee Monitoring",
+    operating_hours: "24x7 Direct Complaint Filing to Ministry & Internal Committees",
+  },
+  {
+    name: "SAMADHAN Industrial & Labour Dispute Resolution Portal",
+    cat: "portal",
+    badge: "Ministry of Labour & Employment",
+    distance: "Central Labour Commissioner",
+    phone: "14489",
+    website: "https://samadhan.labour.gov.in",
+    address: "Chief Labour Commissioner (Central), Shram Shakti Bhawan, Rafi Marg, New Delhi - 110001",
+    operating_hours: "9:30 AM - 6:00 PM (Conciliation, Gratuity & Unpaid Wage Redressal)",
+  },
+
+  // --- 2. STATUTORY AUTHORITIES ---
+  {
+    name: "National Legal Services Authority (NALSA Statutory Apex Body)",
+    cat: "authority",
+    badge: "Supreme Court Statutory Body",
+    distance: "Nationwide Apex Legal Aid",
+    phone: "15100",
+    website: "https://nalsa.gov.in",
+    address: "B Block, Additional Building Complex, Supreme Court of India, New Delhi - 110001",
+    operating_hours: "24x7 Toll-Free National Legal Aid Helpline (15100)",
+  },
+  {
+    name: "National Commission for Women (NCW Statutory Body)",
+    cat: "authority",
+    badge: "Statutory Apex Body for Women Rights",
+    distance: "Nationwide Jurisdiction",
+    phone: "7827170170",
+    website: "https://ncw.nic.in",
+    address: "Plot No. 21, Jasola Institutional Area, New Delhi - 110025 | 24x7 Women Domestic Violence & Harassment Cell",
+    operating_hours: "24x7 Women Helpline (7827170170) & Office Hours (9am-5:30pm)",
+  },
+  {
+    name: "National Human Rights Commission (NHRC Statutory Watchdog)",
+    cat: "authority",
+    badge: "Protection of Human Rights Act 1993",
+    distance: "Apex Human Rights Commission",
+    phone: "14433",
+    website: "https://nhrc.nic.in",
+    address: "Manav Adhikar Bhawan, Block-C, GPO Complex, INA, New Delhi - 110023 | Police Excess & Custodial Violence",
+    operating_hours: "9:30 AM - 6:00 PM (Toll-Free 14433)",
+  },
+  {
+    name: "National Commission for Protection of Child Rights (NCPCR / E-BaalNidan)",
+    cat: "authority",
+    badge: "Statutory Apex Body for Child Rights",
+    distance: "Nationwide Child Rights",
+    phone: "011-23478200",
+    website: "https://ebaalnidan.nic.in",
+    address: "5th Floor, Chanderlok Building, 36 Janpath, New Delhi - 110001 | POCSO & Juvenile Justice Enforcement",
+    operating_hours: "9:30 AM - 5:30 PM (POCSO & Child Labour Enforcement)",
+  },
+  {
+    name: "Central Information Commission (CIC - RTI Statutory Authority)",
+    cat: "authority",
+    badge: "Right to Information Act 2005",
+    distance: "Apex RTI Appellate Commission",
+    phone: "011-26186535",
+    website: "https://cic.gov.in",
+    address: "Baba Gangnath Marg, Munirka, New Delhi - 110067 | Second Appeals & Penalty Hearings",
+    operating_hours: "9:30 AM - 5:30 PM (Mon-Fri)",
+  },
+
+  // --- 3. GOVERNMENT WELFARE & LEGAL SCHEMES ---
+  {
+    name: "One Stop Centre (Sakhi Scheme - Nirbhaya Fund)",
+    cat: "scheme",
+    badge: "Nirbhaya Fund Centrally Sponsored Scheme",
+    distance: "In Every District Hospital Campus",
+    phone: "181",
+    website: "https://wcd.nic.in/schemes/one-stop-centre-scheme-1",
+    address: "District Govt Hospital Campuses Across India | Emergency Medical, Police FIR, Shelter & Legal Aid Under One Roof",
+    operating_hours: "24x7 / 365 Days Immediate Emergency Admission & Trauma Counseling",
+  },
+  {
+    name: "Tele-Law: Mainstreaming Legal Aid to the Marginalized (Dept of Justice)",
+    cat: "scheme",
+    badge: "Ministry of Law & Justice Scheme",
+    distance: "Available at All 4.5 Lakh+ Gram Panchayat CSCs",
+    phone: "15100",
+    website: "https://tele-law.in",
+    address: "Department of Justice, Jaisalmer House, New Delhi | Free Video Consultation with Panel Advocates via Village CSCs",
+    operating_hours: "9:00 AM - 6:00 PM (Mon-Sat at Common Service Centres)",
+  },
+  {
+    name: "Legal Aid Defense Counsel System (LADCS - NALSA)",
+    cat: "scheme",
+    badge: "NALSA Free Criminal Defense Scheme",
+    distance: "District Court Complexes Nationwide",
+    phone: "15100",
+    website: "https://nalsa.gov.in/schemes/legal-aid-defense-counsel-system",
+    address: "District Legal Services Authority (DLSA) | Free Whole-Time Criminal Defense Advocates for Accused/Undertrials",
+    operating_hours: "10:00 AM - 5:00 PM (District Court Working Hours)",
+  },
+  {
+    name: "Pradhan Mantri Matru Vandana Yojana (PMMVY Maternity Benefit)",
+    cat: "scheme",
+    badge: "National Food Security Act 2013 Scheme",
+    distance: "Anganwadi & Primary Health Centres",
+    phone: "011-23382393",
+    website: "https://pmmvy.wcd.gov.in",
+    address: "Ministry of Women and Child Development | ₹5,000 Direct Cash Transfer for Pregnant & Lactating Mothers",
+    operating_hours: "9:30 AM - 5:30 PM (DBT Direct Bank Transfer Support)",
+  },
+  {
+    name: "Ayushman Bharat - PM-JAY (National Health Protection Scheme)",
+    cat: "scheme",
+    badge: "National Health Authority Scheme",
+    distance: "Empanelled Hospitals Nationwide",
+    phone: "14555",
+    website: "https://pmjay.gov.in",
+    address: "National Health Authority, 9th Floor, Tower-l, Jeevan Bharati Building, Connaught Place, New Delhi",
+    operating_hours: "24x7 Toll-Free Cashless Healthcare (Up to ₹5 Lakh per Family per Year)",
+  },
+
+  // --- 4. STATUTORY FREE LEGAL AID (SLSA & DLSA) ---
+  {
+    name: "District Legal Services Authority (DLSA Chennai)",
+    cat: "legal",
+    badge: "Statutory Legal Services Authorities Act",
+    distance: "High Court Campus, Chennai",
+    phone: "044-25342441",
+    website: "https://hcmadras.tn.gov.in/slsa",
+    address: "City Civil Court Buildings, High Court Campus, Chennai - 600104 | Officer: Secretary & Senior Civil Judge",
+    operating_hours: "10:00 AM - 5:45 PM (Mon-Sat, Free Lawyer Assignment & Lok Adalat)",
+  },
+  {
+    name: "Tamil Nadu State Legal Services Authority (TNSLSA)",
+    cat: "legal",
+    badge: "Apex State Legal Aid Authority",
+    distance: "High Court Complex, Chennai",
+    phone: "044-25342834",
+    website: "https://slsa.tn.gov.in",
+    address: "North Fort Road, High Court Complex, Chennai - 600104 | Victim Compensation & Free Legal Representation",
+    operating_hours: "10:00 AM - 5:45 PM (Free Legal Representation for Women, SC/ST, & Poor)",
+  },
+
+  // --- 5. VERIFIED LAWYERS & LEGAL ADVOCATES ---
   {
     name: "Adv. R. Meenakshi (Senior Family & Women's Rights Advocate)",
     cat: "lawyer",
@@ -150,7 +340,7 @@ const verifiedDirectoryResources: Resource[] = [
     operating_hours: "9:00 AM - 5:00 PM (Mon-Sat)",
   },
 
-  // --- HEALTHCARE & EMERGENCY MEDICAL CENTERS ---
+  // --- 6. HEALTHCARE & EMERGENCY MEDICAL CENTERS ---
   {
     name: "Rajiv Gandhi Govt General Hospital (RGGGH 24x7 Emergency Trauma)",
     cat: "hospital",
@@ -169,7 +359,7 @@ const verifiedDirectoryResources: Resource[] = [
     phone: "14416",
     website: "https://imh.tn.gov.in",
     address: "Medavakkam Tank Road, Kilpauk, Chennai - 600010 | Psychiatric Care & Crisis Counseling",
-    operating_hours: "24x7 Toll-Free Mental Healthcare",
+    operating_hours: "24x7 Toll-Free Mental Healthcare (Dial 14416)",
   },
   {
     name: "Apollo Hospitals 24x7 Emergency & Ambulance Service",
@@ -182,7 +372,7 @@ const verifiedDirectoryResources: Resource[] = [
     operating_hours: "24x7 Emergency Care",
   },
 
-  // --- EXTENSIVE SUPPORT NGOS & SHELTERS ---
+  // --- 7. EXTENSIVE SUPPORT NGOS & SHELTERS ---
   {
     name: "Sneha Suicide Prevention Helpline NGO",
     cat: "ngo",
@@ -234,7 +424,7 @@ const verifiedDirectoryResources: Resource[] = [
     operating_hours: "Mon-Sat: 10:00 AM - 8:00 PM",
   },
 
-  // --- GOVERNMENT OFFICERS & HELPLINES ---
+  // --- 8. EMERGENCY POLICE & SPECIALIZED HELPLINES ---
   {
     name: "National Emergency Response Support System (ERSS 112)",
     cat: "police",
@@ -243,61 +433,41 @@ const verifiedDirectoryResources: Resource[] = [
     phone: "112",
     website: "https://erss.in",
     address: "Police Control Room / Command Center | Officer: State Police Nodal Officer",
-    operating_hours: "24x7 / 365 Days",
+    operating_hours: "24x7 / 365 Days Immediate Police Dispatch",
   },
   {
-    name: "National Legal Services Authority (NALSA 15100)",
-    cat: "legal",
-    badge: "Statutory Free Legal Aid",
-    distance: "Nationwide",
-    phone: "15100",
-    website: "https://nalsa.gov.in",
-    address: "District Legal Services Authority (DLSA) | Officer: Secretary & Senior Civil Judge",
-    operating_hours: "24x7 Free Legal Helpline",
-  },
-  {
-    name: "National Women Helpline (NCW 1091)",
+    name: "Women Helpline (181 / 1091 - 24x7 Immediate Distress)",
     cat: "women",
-    badge: "National Women Commission",
+    badge: "National Women Commission & MHA",
     distance: "Nationwide",
-    phone: "1091",
+    phone: "181",
     website: "https://ncw.nic.in",
-    address: "National Commission for Women | Officer: District Social Welfare Officer (DSWO)",
-    operating_hours: "24x7 Emergency Assistance",
+    address: "State Women Emergency Response Unit | Domestic Abuse, Dowry & Stalking Crisis",
+    operating_hours: "24x7 Immediate Rescue & Police Coordination",
   },
   {
-    name: "Childline India Foundation (1098)",
+    name: "Childline Emergency Helpline (1098)",
     cat: "child",
-    badge: "National Child Protection",
+    badge: "Ministry of WCD Childline",
     distance: "Nationwide",
     phone: "1098",
     website: "https://childlineindia.org",
     address: "Childline Command Center | Officer: District Child Protection Officer (DCPO)",
-    operating_hours: "24x7 Toll-Free Emergency Hotline",
+    operating_hours: "24x7 Toll-Free Emergency Child Protection",
   },
   {
-    name: "National Cyber Crime Reporting Helpline (1930)",
-    cat: "gov",
-    badge: "MHA Cyber Crime Portal",
-    distance: "Nationwide",
-    phone: "1930",
-    website: "https://cybercrime.gov.in",
-    address: "Indian Cyber Crime Coordination Centre (I4C) | Officer: Nodal Cyber Crime Inspector",
-    operating_hours: "24x7 Financial Fraud Helpline",
-  },
-  {
-    name: "Elderline Senior Citizens Helpline (14567)",
+    name: "Elderline Senior Citizens National Helpline (14567)",
     cat: "mental",
-    badge: "Ministry of Social Justice",
+    badge: "Ministry of Social Justice & Empowerment",
     distance: "Nationwide",
     phone: "14567",
     website: "https://socialjustice.gov.in",
-    address: "Ministry of Social Justice | Officer: Revenue Divisional Officer (RDO) Maintenance Tribunal",
-    operating_hours: "8:00 AM - 8:00 PM Daily",
+    address: "Maintenance Tribunal & Senior Citizen Abuse Grievance Unit | Officer: Revenue Divisional Officer (RDO)",
+    operating_hours: "8:00 AM - 8:00 PM Daily (Maintenance, Abuse & Shelter Relief)",
   },
   {
-    name: "Tamil Nadu Chief Minister Helpline (1100)",
-    cat: "gov",
+    name: "Tamil Nadu Chief Minister Public Grievance Helpline (1100)",
+    cat: "authority",
     badge: "State Public Grievance",
     distance: "Tamil Nadu",
     phone: "1100",
@@ -362,6 +532,40 @@ function ResourcesScreen() {
 
   const resourceList = dbResources.length > 0 ? dbResources : verifiedDirectoryResources;
 
+const getCategoryBadgeLabel = (cat: Cat, isAdvocate?: boolean) => {
+  if (isAdvocate) return "⚖️ Advocate Profile";
+  switch (cat) {
+    case "portal": return "🏛️ Official Complaint Portal";
+    case "authority": return "⚖️ Statutory Authority";
+    case "scheme": return "📜 Govt Scheme";
+    case "legal": return "🛡️ Free Legal Aid (NALSA/DLSA)";
+    case "hospital": return "🏥 Emergency Medical";
+    case "mental": return "🧠 Mental Health Support";
+    case "police": return "🚨 Police & Emergency";
+    case "women": return "👩 Women Helpline";
+    case "child": return "👶 Child Protection";
+    case "shelter": return "🏠 Shelter & Rehab";
+    case "ngo": return "🤝 Verified NGO";
+    default: return (cat as string).toUpperCase();
+  }
+};
+
+const getCategoryBadgeClass = (cat: Cat, isAdvocate?: boolean) => {
+  if (isAdvocate) return "bg-amber-500/15 text-amber-600 dark:text-amber-400";
+  switch (cat) {
+    case "portal": return "bg-sky-500/15 text-sky-600 dark:text-sky-400";
+    case "authority": return "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400";
+    case "scheme": return "bg-purple-500/15 text-purple-600 dark:text-purple-400";
+    case "legal": return "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400";
+    case "hospital": return "bg-rose-500/15 text-rose-600 dark:text-rose-400";
+    case "mental": return "bg-teal-500/15 text-teal-600 dark:text-teal-400";
+    case "police": return "bg-red-500/15 text-red-600 dark:text-red-400";
+    case "women": return "bg-pink-500/15 text-pink-600 dark:text-pink-400";
+    case "child": return "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400";
+    default: return "bg-primary/10 text-primary";
+  }
+};
+
   const list = useMemo(() => {
     const queryClean = q.trim().toLowerCase();
 
@@ -380,6 +584,10 @@ function ResourcesScreen() {
         r.badge || "",
         r.phone,
         r.isLawyer ? "lawyer advocate attorney legal counsel" : "",
+        r.cat === "portal" ? "portal complaint grievance consumer cyber crime edaakhil ingram samadhan shebox cpgrams" : "",
+        r.cat === "authority" ? "authority nalsa ncw nhrc ncpcr cic commission government" : "",
+        r.cat === "scheme" ? "scheme one stop centre sakhi tele law ladcs matru vandana pmmvy ayushman nirbhaya" : "",
+        r.cat === "legal" ? "legal aid dlsa slsa lok adalat free lawyer legal representation" : "",
         r.cat === "hospital" ? "health healthcare hospital emergency ambulance clinic medical" : "",
         r.cat === "ngo" ? "ngo non profit shelter social support" : "",
       ]
@@ -394,8 +602,8 @@ function ResourcesScreen() {
     <div className="animate-fade-up pb-16 min-h-screen bg-background">
       <ScreenHeader
         eyebrow="Verified Public Services & Legal Directory"
-        title="Resources, Lawyers & NGOs"
-        description="Search family lawyers, property advocates, healthcare emergency centers, NGOs, shelters and helplines."
+        title="Resources, Portals & Legal Aid"
+        description="Search official authorities, statutory complaint portals, verified helplines, government schemes, DLSA legal-aid, and advocates."
       />
 
       {/* SEARCH BAR */}
@@ -405,14 +613,14 @@ function ResourcesScreen() {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search e.g. 'family lawyer', 'health care', 'patta lawyer', 'women NGO', 'POSH', 'shelter'..."
+            placeholder="Search e.g. 'consumer complaint', 'cyber crime', 'free legal aid', 'women shelter', 'sakhi', 'posh'..."
             className="flex-1 bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
           {q && (
             <button
               type="button"
               onClick={() => setQ("")}
-              className="text-xs font-semibold text-muted-foreground hover:text-foreground bg-secondary px-2.5 py-1 rounded-lg"
+              className="text-xs font-semibold text-muted-foreground hover:text-foreground bg-secondary px-2.5 py-1 rounded-lg cursor-pointer"
             >
               Clear
             </button>
@@ -468,19 +676,16 @@ function ResourcesScreen() {
                 <div>
                   <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
                     <span
-                      className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                        isAdvocate
-                          ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                          : r.cat === "hospital"
-                          ? "bg-rose-500/15 text-rose-600 dark:text-rose-400"
-                          : "bg-primary/10 text-primary"
-                      }`}
+                      className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getCategoryBadgeClass(
+                        r.cat,
+                        isAdvocate,
+                      )}`}
                     >
-                      {isAdvocate ? "⚖️ Advocate Profile" : r.cat.toUpperCase()}
+                      {getCategoryBadgeLabel(r.cat, isAdvocate)}
                     </span>
 
                     <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
-                      <BadgeCheck className="h-3 w-3" /> {r.badge || "Verified Source"}
+                      <BadgeCheck className="h-3 w-3" /> {r.badge || "Verified Official Source"}
                     </span>
                   </div>
 

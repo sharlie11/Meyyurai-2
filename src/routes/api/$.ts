@@ -1786,11 +1786,16 @@ async function handleResourcesRoutes(
 
     if (resources.length === 0) {
       resources = [
-        { id: "r1", name: "National Emergency Response NERS", category: "Emergency", contact_number: "112", address: "Pan-India", operating_hours: "24/7" },
-        { id: "r2", name: "National Women Helpline", category: "Women Safety", contact_number: "1091", address: "Ministry of Women & Child Development", operating_hours: "24/7" },
-        { id: "r3", name: "Childline India", category: "Child Protection", contact_number: "1098", address: "Pan-India", operating_hours: "24/7" },
-        { id: "r4", name: "National Cyber Crime Helpline", category: "Cyber Crime", contact_number: "1930", address: "MHA Cyber Crime Portal", operating_hours: "24/7" },
-        { id: "r5", name: "Ambulance Emergency", category: "Medical", contact_number: "108", address: "State Medical Services", operating_hours: "24/7" },
+        { id: "r1", name: "National Emergency Response System (ERSS)", category: "Emergency", contact_number: "112", website: "https://erss.in", address: "Pan-India Command Center", operating_hours: "24/7" },
+        { id: "r2", name: "National Cyber Crime Reporting Helpline (I4C)", category: "Cyber Crime", contact_number: "1930", website: "https://cybercrime.gov.in", address: "Indian Cyber Crime Coordination Centre, MHA", operating_hours: "24/7" },
+        { id: "r3", name: "National Consumer Helpline (NCH / INGRAM)", category: "Complaint Portal", contact_number: "1915", website: "https://consumerhelpline.gov.in", address: "Department of Consumer Affairs, Krishi Bhawan, New Delhi", operating_hours: "8:00 AM - 8:00 PM" },
+        { id: "r4", name: "National Legal Services Authority (NALSA)", category: "Legal Aid", contact_number: "15100", website: "https://nalsa.gov.in", address: "Supreme Court Complex, New Delhi", operating_hours: "24/7" },
+        { id: "r5", name: "National Women Helpline", category: "Women Safety", contact_number: "181", website: "https://ncw.nic.in", address: "National Commission for Women, New Delhi", operating_hours: "24/7" },
+        { id: "r6", name: "Childline Emergency Helpline", category: "Child Protection", contact_number: "1098", website: "https://childlineindia.org", address: "Ministry of Women & Child Development", operating_hours: "24/7" },
+        { id: "r7", name: "SAMADHAN Industrial & Labour Dispute Portal", category: "Complaint Portal", contact_number: "14489", website: "https://samadhan.labour.gov.in", address: "Ministry of Labour and Employment, New Delhi", operating_hours: "9:30 AM - 6:00 PM" },
+        { id: "r8", name: "One Stop Centre (Sakhi Scheme)", category: "Govt Scheme", contact_number: "181", website: "https://wcd.nic.in/schemes/one-stop-centre-scheme-1", address: "District Govt Hospital Campuses Nationwide", operating_hours: "24/7" },
+        { id: "r9", name: "National Tele-MANAS Mental Health Helpline", category: "Mental Health", contact_number: "14416", website: "https://telemanas.mohfw.gov.in", address: "Ministry of Health & Family Welfare", operating_hours: "24/7" },
+        { id: "r10", name: "Elderline Senior Citizens Helpline", category: "Senior Citizen", contact_number: "14567", website: "https://socialjustice.gov.in", address: "Ministry of Social Justice and Empowerment", operating_hours: "8:00 AM - 8:00 PM" },
       ];
     }
 
