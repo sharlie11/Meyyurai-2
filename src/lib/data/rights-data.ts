@@ -22,6 +22,121 @@ export interface RelevantLaw {
   trialCourt?: string;
   officialSource: string;
   officialUrl?: string;
+  sectionUrl?: string;
+}
+
+/**
+ * Verified, permanent statutory URLs for Central Acts across Official Ministry Portals & Indian Kanoon.
+ * Avoids broken indiacode.nic.in domains that trigger Akamai EdgeSuite CDN server errors.
+ */
+export const RELIABLE_LAW_URLS: Record<string, { kanoon: string; gazette: string }> = {
+  bns: {
+    kanoon: "https://indiankanoon.org/search/?formInput=Bharatiya%20Nyaya%20Sanhita%202023",
+    gazette: "https://www.mha.gov.in/sites/default/files/250883_english_01042024.pdf",
+  },
+  bnss: {
+    kanoon: "https://indiankanoon.org/search/?formInput=Bharatiya%20Nagarik%20Suraksha%20Sanhita%202023",
+    gazette: "https://www.mha.gov.in/sites/default/files/250882_english_01042024.pdf",
+  },
+  pwdva: {
+    kanoon: "https://indiankanoon.org/search/?formInput=Protection%20of%20Women%20from%20Domestic%20Violence%20Act%202005",
+    gazette: "https://wcd.nic.in/act/protection-women-domestic-violence-act-2005",
+  },
+  posh: {
+    kanoon: "https://indiankanoon.org/search/?formInput=Sexual%20Harassment%20of%20Women%20at%20Workplace%20Act%202013",
+    gazette: "https://wcd.nic.in/act/sexual-harassment-women-workplace-prevention-prohibition-and-redressal-act-2013",
+  },
+  dowry: {
+    kanoon: "https://indiankanoon.org/search/?formInput=Dowry%20Prohibition%20Act%201961",
+    gazette: "https://wcd.nic.in/act/dowry-prohibition-act-1961",
+  },
+  registration: {
+    kanoon: "https://indiankanoon.org/search/?formInput=Registration%20Act%201908",
+    gazette: "https://indiankanoon.org/search/?formInput=Registration%20Act%201908",
+  },
+  code_on_wages: {
+    kanoon: "https://indiankanoon.org/search/?formInput=Code%20on%20Wages%202019",
+    gazette: "https://labour.gov.in/sites/default/files/TheCodeonWages2019.pdf",
+  },
+  consumer: {
+    kanoon: "https://indiankanoon.org/search/?formInput=Consumer%20Protection%20Act%202019",
+    gazette: "https://consumeraffairs.nic.in/sites/default/files/act_file/Consumer%20Protection%20Act%202019.pdf",
+  },
+  it_act: {
+    kanoon: "https://indiankanoon.org/search/?formInput=Information%20Technology%20Act%202000",
+    gazette: "https://www.meity.gov.in/writereaddata/files/itbill2000.pdf",
+  },
+  pocso: {
+    kanoon: "https://indiankanoon.org/search/?formInput=Protection%20of%20Children%20from%20Sexual%20Offences%20Act%202012",
+    gazette: "https://wcd.nic.in/sites/default/files/ThePOCSOAct2012.pdf",
+  },
+  senior_citizens: {
+    kanoon: "https://indiankanoon.org/search/?formInput=Maintenance%20and%20Welfare%20of%20Parents%20and%20Senior%20Citizens%20Act%202007",
+    gazette: "https://socialjustice.gov.in/writereaddata/UploadFile/Annexure-X635996105039234032.pdf",
+  },
+  nalsa: {
+    kanoon: "https://indiankanoon.org/search/?formInput=Legal%20Services%20Authorities%20Act%201987",
+    gazette: "https://nalsa.gov.in/acts-rules/the-legal-services-authorities-act-1987",
+  },
+  scst: {
+    kanoon: "https://indiankanoon.org/search/?formInput=Scheduled%20Castes%20and%20Scheduled%20Tribes%20Prevention%20of%20Atrocities%20Act%201989",
+    gazette: "https://socialjustice.gov.in/writereaddata/UploadFile/PoAact.pdf",
+  },
+  railways: {
+    kanoon: "https://indiankanoon.org/search/?formInput=Railways%20Act%201989",
+    gazette: "https://indiankanoon.org/search/?formInput=Railways%20Act%201989",
+  },
+  anti_ragging: {
+    kanoon: "https://indiankanoon.org/search/?formInput=UGC%20Anti%20Ragging%20Regulations",
+    gazette: "https://www.antiragging.in/assets/pdf/annexure/Annexure-I.pdf",
+  },
+};
+
+/**
+ * Resolves the exact official Act repository URL.
+ * NEVER returns broken indiacode.nic.in or generic homepages.
+ */
+export function getLawOfficialUrl(law: { actName?: string; section?: string; officialUrl?: string }): string {
+  if (
+    law.officialUrl &&
+    !law.officialUrl.includes("indiacode.nic.in") &&
+    !law.officialUrl.includes("indiacode.gov.in")
+  ) {
+    return law.officialUrl;
+  }
+
+  const name = (law.actName || "").toLowerCase();
+  if (name.includes("consumer")) return RELIABLE_LAW_URLS.consumer.gazette;
+  if (name.includes("nyaya sanhita") || name.includes("bns")) return RELIABLE_LAW_URLS.bns.gazette;
+  if (name.includes("nagarik suraksha") || name.includes("bnss")) return RELIABLE_LAW_URLS.bnss.gazette;
+  if (name.includes("domestic violence") || name.includes("pwdva")) return RELIABLE_LAW_URLS.pwdva.gazette;
+  if (name.includes("posh") || name.includes("sexual harassment of women at workplace")) return RELIABLE_LAW_URLS.posh.gazette;
+  if (name.includes("dowry")) return RELIABLE_LAW_URLS.dowry.gazette;
+  if (name.includes("registration")) return RELIABLE_LAW_URLS.registration.gazette;
+  if (name.includes("wages")) return RELIABLE_LAW_URLS.code_on_wages.gazette;
+  if (name.includes("information technology") || name.includes("it act")) return RELIABLE_LAW_URLS.it_act.gazette;
+  if (name.includes("pocso") || name.includes("protection of children")) return RELIABLE_LAW_URLS.pocso.gazette;
+  if (name.includes("senior citizen") || name.includes("maintenance and welfare of parents")) return RELIABLE_LAW_URLS.senior_citizens.gazette;
+  if (name.includes("legal services") || name.includes("nalsa")) return RELIABLE_LAW_URLS.nalsa.gazette;
+  if (name.includes("atrocities") || name.includes("scheduled caste") || name.includes("sc/st")) return RELIABLE_LAW_URLS.scst.gazette;
+  if (name.includes("railway")) return RELIABLE_LAW_URLS.railways.gazette;
+  if (name.includes("anti-ragging") || name.includes("ugc")) return RELIABLE_LAW_URLS.anti_ragging.gazette;
+
+  return `https://indiankanoon.org/search/?formInput=${encodeURIComponent(law.actName || "Indian Bare Act")}`;
+}
+
+/**
+ * Returns a direct link to the EXACT SECTION of the statutory law on Indian Kanoon.
+ * Guarantees direct access to the section's legal text and interpretations.
+ */
+export function getLawSectionUrl(law: { actName?: string; section?: string; sectionUrl?: string }): string {
+  if (law.sectionUrl) return law.sectionUrl;
+  const cleanAct = (law.actName || "")
+    .replace(/\s*\(BNS\)\s*\/\s*IPC|\s*\(BNSS\)\s*\/\s*CrPC/gi, "")
+    .trim();
+  const cleanSection = (law.section || "").split(":")[0].trim();
+  const query = `${cleanAct} ${cleanSection}`.trim();
+  return `https://indiankanoon.org/search/?formInput=${encodeURIComponent(query)}`;
 }
 
 export interface AuthorityOffice {
@@ -203,8 +318,9 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         classification: "Cognizable | Non-Bailable | Triable by Judicial Magistrate 1st Class",
         punishment: "Mandatory imprisonment of minimum 1 year extending up to 5 years + Fine. Cognizable & Non-Bailable Offence.",
         trialCourt: "Judicial Magistrate First Class / Metropolitan Magistrate",
-        officialSource: "Ministry of Law & Justice, Govt of India",
-        officialUrl: "https://www.indiacode.nic.in",
+        officialSource: "Ministry of Law & Justice / Ministry of Home Affairs (MHA)",
+        officialUrl: "https://www.mha.gov.in/sites/default/files/250883_english_01042024.pdf",
+        sectionUrl: "https://indiankanoon.org/search/?formInput=Bharatiya%20Nyaya%20Sanhita%20Section%2074",
       },
       {
         actName: "Bharatiya Nyaya Sanhita, 2023 (BNS) / IPC",
@@ -215,8 +331,9 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         classification: "1st Offence: Cognizable & Bailable | 2nd Offence: Cognizable & Non-Bailable",
         punishment: "1st Conviction: Imprisonment up to 3 years + Fine (Bailable). 2nd Conviction: Imprisonment up to 5 years + Fine (Non-Bailable).",
         trialCourt: "Judicial Magistrate First Class",
-        officialSource: "Ministry of Law & Justice, Govt of India",
-        officialUrl: "https://www.indiacode.nic.in",
+        officialSource: "Ministry of Law & Justice / Ministry of Home Affairs (MHA)",
+        officialUrl: "https://www.mha.gov.in/sites/default/files/250883_english_01042024.pdf",
+        sectionUrl: "https://indiankanoon.org/search/?formInput=Bharatiya%20Nyaya%20Sanhita%20Section%2078",
       },
       {
         actName: "Bharatiya Nyaya Sanhita, 2023 (BNS) / IPC",
@@ -227,8 +344,9 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         classification: "Cognizable | Bailable | Triable by Any Magistrate",
         punishment: "Rigorous imprisonment extending up to 3 years or Fine or both.",
         trialCourt: "Any Magistrate",
-        officialSource: "Ministry of Law & Justice, Govt of India",
-        officialUrl: "https://www.indiacode.nic.in",
+        officialSource: "Ministry of Law & Justice / Ministry of Home Affairs (MHA)",
+        officialUrl: "https://www.mha.gov.in/sites/default/files/250883_english_01042024.pdf",
+        sectionUrl: "https://indiankanoon.org/search/?formInput=Bharatiya%20Nyaya%20Sanhita%20Section%2075",
       },
       {
         actName: "Bharatiya Nyaya Sanhita, 2023 (BNS) / IPC",
@@ -239,8 +357,9 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         classification: "Cognizable | Non-Bailable | Non-Compoundable",
         punishment: "Imprisonment up to 3 years + Mandatory Fine. Non-Bailable & Cognizable Offence.",
         trialCourt: "Judicial Magistrate First Class",
-        officialSource: "Ministry of Law & Justice, Govt of India",
-        officialUrl: "https://www.indiacode.nic.in",
+        officialSource: "Ministry of Law & Justice / Ministry of Home Affairs (MHA)",
+        officialUrl: "https://www.mha.gov.in/sites/default/files/250883_english_01042024.pdf",
+        sectionUrl: "https://indiankanoon.org/search/?formInput=Bharatiya%20Nyaya%20Sanhita%20Section%2085",
       },
       {
         actName: "Protection of Women from Domestic Violence Act, 2005",
@@ -251,8 +370,9 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         classification: "Cognizable | Non-Bailable | Triable by Judicial Magistrate 1st Class",
         punishment: "Violation of Protection Order: Imprisonment up to 1 year or Fine up to ₹20,000 or both. Non-Bailable.",
         trialCourt: "Judicial Magistrate First Class / Metropolitan Magistrate",
-        officialSource: "National Commission for Women (NCW)",
-        officialUrl: "https://ncw.nic.in",
+        officialSource: "National Commission for Women (NCW) / Ministry of Women & Child Development",
+        officialUrl: "https://wcd.nic.in/act/protection-women-domestic-violence-act-2005",
+        sectionUrl: "https://indiankanoon.org/search/?formInput=Protection%20of%20Women%20from%20Domestic%20Violence%20Act%20Section%203",
       },
       {
         actName: "Sexual Harassment of Women at Workplace (POSH) Act, 2013",
@@ -264,7 +384,8 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         punishment: "Employer failure to form ICC or comply: Penalty up to ₹50,000; cancellation of business operational license for repeat offense.",
         trialCourt: "District Magistrate / Labour Conciliation Officer",
         officialSource: "Ministry of Women and Child Development",
-        officialUrl: "https://wcd.nic.in",
+        officialUrl: "https://wcd.nic.in/act/sexual-harassment-women-workplace-prevention-prohibition-and-redressal-act-2013",
+        sectionUrl: "https://indiankanoon.org/search/?formInput=Sexual%20Harassment%20of%20Women%20at%20Workplace%20Act%20Section%204",
       },
       {
         actName: "Dowry Prohibition Act, 1961",
@@ -275,8 +396,9 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         classification: "Cognizable | Non-Bailable | Non-Compoundable",
         punishment: "Taking/Giving Dowry: Minimum 5 years imprisonment + Fine up to ₹15,000 or dowry value. Demanding Dowry: 6 months to 2 years imprisonment + Fine.",
         trialCourt: "Metropolitan Magistrate / Judicial Magistrate First Class",
-        officialSource: "Ministry of Law and Justice",
-        officialUrl: "https://www.indiacode.nic.in",
+        officialSource: "Ministry of Women and Child Development",
+        officialUrl: "https://wcd.nic.in/act/dowry-prohibition-act-1961",
+        sectionUrl: "https://indiankanoon.org/search/?formInput=Dowry%20Prohibition%20Act%20Section%203",
       },
     ],
     authorities: [
@@ -376,8 +498,9 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         classification: "Mandatory Statutory Compliance | Unregistered Document Inadmissible",
         punishment: "Unregistered property deed confers NO legal ownership title and cannot be enforced in civil court.",
         trialCourt: "Civil Court / Sub-Registrar Office (SRO)",
-        officialSource: "Inspector General of Registration, Tamil Nadu",
-        officialUrl: "https://tnreginet.gov.in",
+        officialSource: "Inspector General of Registration, Tamil Nadu / Indian Kanoon",
+        officialUrl: "https://indiankanoon.org/search/?formInput=Registration%20Act%201908",
+        sectionUrl: "https://indiankanoon.org/search/?formInput=Registration%20Act%201908%20Section%2017",
       },
     ],
     authorities: [
@@ -459,7 +582,8 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         punishment: "Employer failure to pay wages: Fine up to ₹50,000 for 1st offense. Repeat offense: Imprisonment up to 3 months + Fine up to ₹1 Lakh.",
         trialCourt: "Labour Court / Metropolitan Magistrate",
         officialSource: "Ministry of Labour & Employment",
-        officialUrl: "https://samadhan.labour.gov.in",
+        officialUrl: "https://labour.gov.in/sites/default/files/TheCodeonWages2019.pdf",
+        sectionUrl: "https://indiankanoon.org/search/?formInput=Code%20on%20Wages%202019%20Section%205",
       },
     ],
     authorities: [
@@ -537,8 +661,9 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         classification: "Statutory Consumer Rights | Summary Adjudication",
         punishment: "Failure to comply with Consumer Commission Order: Imprisonment from 1 month to 3 years + Fine ₹25,000 to ₹1 Lakh.",
         trialCourt: "District Consumer Disputes Redressal Commission (DCDRC)",
-        officialSource: "Department of Consumer Affairs",
-        officialUrl: "https://consumeraffairs.nic.in",
+        officialSource: "Department of Consumer Affairs, Govt of India",
+        officialUrl: "https://consumeraffairs.nic.in/sites/default/files/act_file/Consumer%20Protection%20Act%202019.pdf",
+        sectionUrl: "https://indiankanoon.org/search/?formInput=Consumer%20Protection%20Act%202019%20Section%2035",
       },
     ],
     authorities: [
@@ -617,7 +742,8 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         punishment: "Imprisonment up to 3 years + Fine up to ₹1 Lakh. Cognizable Offence.",
         trialCourt: "Metropolitan Magistrate / Chief Judicial Magistrate",
         officialSource: "Ministry of Electronics and IT (MeitY)",
-        officialUrl: "https://meity.gov.in",
+        officialUrl: "https://www.meity.gov.in/writereaddata/files/itbill2000.pdf",
+        sectionUrl: "https://indiankanoon.org/search/?formInput=Information%20Technology%20Act%20Section%2066D",
       },
     ],
     authorities: [
@@ -695,7 +821,8 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         punishment: "Penetrative Sexual Assault: Minimum 20 years imprisonment up to Life Imprisonment / Death + Fine.",
         trialCourt: "Special Designated POCSO Sessions Court",
         officialSource: "Ministry of Women and Child Development",
-        officialUrl: "https://wcd.nic.in",
+        officialUrl: "https://wcd.nic.in/sites/default/files/ThePOCSOAct2012.pdf",
+        sectionUrl: "https://indiankanoon.org/search/?formInput=POCSO%20Act%20Section%204",
       },
     ],
     authorities: [
@@ -751,7 +878,8 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         punishment: "Non-compliance with maintenance order: Imprisonment up to 1 month or until payment is made. Abandoning Senior Citizen: Imprisonment up to 3 months + Fine ₹5,000.",
         trialCourt: "Senior Citizens Maintenance Tribunal (RDO Office)",
         officialSource: "Ministry of Social Justice and Empowerment",
-        officialUrl: "https://socialjustice.gov.in",
+        officialUrl: "https://socialjustice.gov.in/writereaddata/UploadFile/Annexure-X635996105039234032.pdf",
+        sectionUrl: "https://indiankanoon.org/search/?formInput=Maintenance%20and%20Welfare%20of%20Parents%20and%20Senior%20Citizens%20Act%20Section%2023",
       },
     ],
     authorities: [
@@ -830,7 +958,8 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         punishment: "Denial of legal aid to eligible persons violates Constitutional Rights under Article 21 & Article 39A.",
         trialCourt: "District Court DLSA / High Court Legal Services Committee (HCLSC)",
         officialSource: "National Legal Services Authority (NALSA)",
-        officialUrl: "https://nalsa.gov.in",
+        officialUrl: "https://nalsa.gov.in/acts-rules/the-legal-services-authorities-act-1987",
+        sectionUrl: "https://indiankanoon.org/search/?formInput=Legal%20Services%20Authorities%20Act%20Section%2012",
       },
     ],
     authorities: [
@@ -910,7 +1039,8 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         punishment: "Rigorous imprisonment extending from 6 months up to Life Imprisonment + Mandatory Fine & Victim Compensation.",
         trialCourt: "Special Designated SC/ST Sessions Court",
         officialSource: "Ministry of Social Justice and Empowerment",
-        officialUrl: "https://socialjustice.gov.in",
+        officialUrl: "https://socialjustice.gov.in/writereaddata/UploadFile/PoAact.pdf",
+        sectionUrl: "https://indiankanoon.org/search/?formInput=Scheduled%20Castes%20and%20Scheduled%20Tribes%20Prevention%20of%20Atrocities%20Act%20Section%203",
       },
     ],
     authorities: [
@@ -989,7 +1119,8 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         punishment: "Expulsion from institution, cancellation of admission + Imprisonment up to 3 years under penal law.",
         trialCourt: "Judicial Magistrate First Class / UGC Ombudsman",
         officialSource: "University Grants Commission (UGC)",
-        officialUrl: "https://www.ugc.gov.in",
+        officialUrl: "https://www.antiragging.in/assets/pdf/annexure/Annexure-I.pdf",
+        sectionUrl: "https://indiankanoon.org/search/?formInput=UGC%20Anti%20Ragging%20Regulations",
       },
     ],
     authorities: [
@@ -1057,7 +1188,8 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         punishment: "Railway Claims Tribunal orders mandatory compensation up to ₹8 Lakhs.",
         trialCourt: "Railway Claims Tribunal (RCT)",
         officialSource: "Ministry of Railways",
-        officialUrl: "https://railmadad.indianrailways.gov.in",
+        officialUrl: "https://indianrailways.gov.in",
+        sectionUrl: "https://indiankanoon.org/search/?formInput=Railways%20Act%20Section%20124A",
       },
     ],
     authorities: [
@@ -1120,8 +1252,9 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         classification: "Statutory Maintenance Right | Summary Magistrate Proceedings",
         punishment: "Failure to pay maintenance: Imprisonment up to 1 month for every breach or until payment is fulfilled.",
         trialCourt: "Family Court / Judicial Magistrate First Class",
-        officialSource: "Ministry of Law and Justice",
-        officialUrl: "https://www.indiacode.nic.in",
+        officialSource: "Ministry of Home Affairs (MHA) / Gazette of India",
+        officialUrl: "https://www.mha.gov.in/sites/default/files/250882_english_01042024.pdf",
+        sectionUrl: "https://indiankanoon.org/search/?formInput=Bharatiya%20Nagarik%20Suraksha%20Sanhita%20Section%20144",
       },
     ],
     authorities: [

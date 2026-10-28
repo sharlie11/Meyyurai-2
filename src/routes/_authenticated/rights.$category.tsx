@@ -30,7 +30,14 @@ import {
 // (Skipping to authority office cards edit in lower line range...)
 import { rightsCategories } from "./rights";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { RIGHTS_DATA, CategoryRightsDetail, Scheme, RelevantLaw } from "@/lib/data/rights-data";
+import {
+  RIGHTS_DATA,
+  CategoryRightsDetail,
+  Scheme,
+  RelevantLaw,
+  getLawOfficialUrl,
+  getLawSectionUrl,
+} from "@/lib/data/rights-data";
 
 export const Route = createFileRoute("/_authenticated/rights/$category")({
   head: ({ params }) => {
@@ -528,25 +535,33 @@ export function CategoryDetailContent({
               >
                 <div className="flex items-start justify-between gap-2">
                   <h4 className="font-bold text-sm text-foreground">{law.actName}</h4>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     {/* BARE ACT TEXT MODAL BUTTON */}
                     <button
                       type="button"
                       onClick={() => setActiveModalLaw(law)}
-                      className="shrink-0 flex items-center gap-1 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                      className="shrink-0 flex items-center gap-1 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 px-2.5 py-1.5 rounded-xl transition-colors cursor-pointer"
                     >
                       <Scroll className="h-3.5 w-3.5" /> Read Bare Act Section
                     </button>
-                    {law.officialUrl && (
-                      <a
-                        href={law.officialUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="shrink-0 flex items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-secondary px-2.5 py-1.5 rounded-xl transition-colors"
-                      >
-                        <ExternalLink className="h-3 w-3" /> India Code
-                      </a>
-                    )}
+                    <a
+                      href={getLawSectionUrl(law)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="shrink-0 flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 bg-amber-500/10 px-2 py-1.5 rounded-xl transition-colors"
+                      title="View exact section statutory wording"
+                    >
+                      <Scale className="h-3 w-3" /> Exact Section ↗
+                    </a>
+                    <a
+                      href={getLawOfficialUrl(law)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="shrink-0 flex items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-secondary px-2 py-1.5 rounded-xl transition-colors"
+                      title="Open Official Ministry Gazette PDF publication"
+                    >
+                      <ExternalLink className="h-3 w-3" /> Official Gazette PDF ↗
+                    </a>
                   </div>
                 </div>
 
@@ -848,21 +863,29 @@ export function CategoryDetailContent({
               </div>
             )}
 
-            <div className="pt-2 flex gap-2">
+            <div className="pt-2 flex flex-col sm:flex-row gap-2">
               <button
                 type="button"
                 onClick={() => setActiveModalLaw(null)}
-                className="flex-1 bg-secondary text-foreground py-2.5 rounded-xl text-xs font-bold hover:bg-secondary/80 transition-colors"
+                className="bg-secondary text-foreground py-2.5 px-4 rounded-xl text-xs font-bold hover:bg-secondary/80 transition-colors"
               >
                 Close Reader
               </button>
               <a
-                href={activeModalLaw.officialUrl || "https://www.indiacode.nic.in"}
+                href={getLawSectionUrl(activeModalLaw)}
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-xl text-xs font-bold text-center flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <Scale className="h-3.5 w-3.5" /> View Exact Section Text ↗
+              </a>
+              <a
+                href={getLawOfficialUrl(activeModalLaw)}
                 target="_blank"
                 rel="noreferrer"
                 className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-xl text-xs font-bold text-center flex items-center justify-center gap-1.5 shadow-sm"
               >
-                <ExternalLink className="h-3.5 w-3.5" /> Open India Code Repository ↗
+                <ExternalLink className="h-3.5 w-3.5" /> Official Gazette PDF ↗
               </a>
             </div>
           </div>

@@ -93,7 +93,10 @@ export function getServiceRoleClient() {
  * Authenticates the JWT token from request Authorization header
  * and returns the Supabase client initialized with user claims.
  */
-export async function authenticateRequest(request: Request) {
+export async function authenticateRequest(
+  request: Request,
+  options: { allowAnonymous?: boolean } = {},
+) {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const publishableKey =
     process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -101,6 +104,7 @@ export async function authenticateRequest(request: Request) {
   if (!url || !publishableKey) {
     return {
       userId: null,
+      userEmail: null,
       supabaseClient: null,
       error: new Response(
         JSON.stringify({ error: "Server Configuration Error: Missing Supabase credentials." }),
@@ -128,18 +132,29 @@ export async function authenticateRequest(request: Request) {
           };
         }
       } catch (e) {
-        // Fallback to service role below
+        // Token validation failed
       }
     }
   }
 
-  // Active user session fallback
-  const serviceClient = getServiceRoleClient();
+  if (options.allowAnonymous) {
+    const serviceClient = getServiceRoleClient();
+    return {
+      userId: null,
+      userEmail: null,
+      supabaseClient: serviceClient,
+      error: null,
+    };
+  }
+
   return {
-    userId: "guest_active_user",
-    userEmail: "guest@meyyurai.org",
-    supabaseClient: serviceClient,
-    error: null,
+    userId: null,
+    userEmail: null,
+    supabaseClient: null,
+    error: new Response(
+      JSON.stringify({ error: "Unauthorized: Invalid or missing authentication token." }),
+      { status: 401, headers: JSON_HEADERS },
+    ),
   };
 }
 

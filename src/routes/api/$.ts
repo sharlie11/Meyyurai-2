@@ -1,4 +1,5 @@
 // src/routes/api/$.ts
+import crypto from "node:crypto";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   authenticateRequest,
@@ -19,8 +20,8 @@ import {
   GuidanceEngineResponse,
   ActionPlanGeneratorResponse,
 } from "@/lib/ai/provider";
-import { fetchAndIngestIndiaCodeAct, resolveActTitleToHandle } from "@/lib/ingestion/indiacode-fetcher";
-import { sendEmergencySmsMsg91 } from "@/lib/sms";
+import { fetchAndIngestIndiaCodeAct, resolveActTitleToHandle, searchLocalIngestedChunks } from "@/lib/ingestion/indiacode-fetcher";
+import { sendEmergencySmsMsg91, type SmsDispatchResult } from "@/lib/sms";
 import type { Json } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/api/$")({
@@ -70,6 +71,7 @@ async function handleApiRequest(
         return await handleContactsRoutes(request, action, subAction, method);
       case "sos":
         return await handleSosRoutes(request, action, method);
+      case "location":
       case "tracking":
         return await handleTrackingRoutes(request, action, method);
       case "ai":
@@ -88,6 +90,14 @@ async function handleApiRequest(
         return await handleAdminRoutes(request, action, method);
       case "settings":
         return await handleSettingsRoutes(request, action, method);
+      case "complaints":
+        return await handleComplaintsRoutes(request, action, method);
+      case "evidence":
+        return await handleEvidenceRoutes(request, action, method);
+      case "bookmarks":
+        return await handleBookmarksRoutes(request, action, method);
+      case "search":
+        return await handleSearchRoutes(request, action, method, url);
       default:
         return createResponse(
           { error: `Not Found: API route '/api/${splat}' does not exist.` },
@@ -201,7 +211,7 @@ async function handleUsersRoutes(
       const { data, error: dbError } = await serviceClient
         .from("profiles")
         .select("*")
-        .eq("id", userId)
+        .eq("id", userId!)
         .single();
 
       if (dbError) return createResponse({ error: dbError.message }, 404);
@@ -239,7 +249,7 @@ async function handleProfilesRoutes(
       const { data, error: dbError } = await serviceClient
         .from("profiles")
         .select("*")
-        .eq("id", userId)
+        .eq("id", userId!)
         .single();
 
       if (dbError) return createResponse({ error: dbError.message }, 404);
@@ -262,7 +272,7 @@ async function handleProfilesRoutes(
           onboarded,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", userId)
+        .eq("id", userId!)
         .select()
         .single();
 
@@ -564,14 +574,123 @@ async function handleSosRoutes(
   return createResponse({ error: "Not Found" }, 404);
 }
 
+function getRequiredEncryptionSecret(): string {
+  const secret = process.env.ENCRYPTION_SECRET;
+  if (!secret || secret.trim() === "") {
+    throw new Error("Server Security Error: ENCRYPTION_SECRET environment variable is not configured.");
+  }
+  return secret.trim();
+}
+
+function generateTrackingShareToken(sessionId: string, userId: string, maxDurationMs = 10800000): string {
+  const secret = getRequiredEncryptionSecret();
+  const expiresAtMs = Date.now() + maxDurationMs;
+  const signature = crypto
+    .createHmac("sha256", secret)
+    .update(`${sessionId}:${userId}:${expiresAtMs}`)
+    .digest("hex")
+    .substring(0, 32);
+  return `${expiresAtMs}.${signature}`;
+}
+
+function verifyTrackingShareToken(sessionId: string, userId: string, token: string): { valid: boolean; reason?: string } {
+  if (!token || !token.includes(".")) {
+    return { valid: false, reason: "Malformed location share token" };
+  }
+
+  const [expiresAtStr, signature] = token.split(".");
+  const expiresAt = parseInt(expiresAtStr, 10);
+
+  if (isNaN(expiresAt) || Date.now() > expiresAt) {
+    return { valid: false, reason: "Location share token has expired" };
+  }
+
+  try {
+    const secret = getRequiredEncryptionSecret();
+    const expectedSignature = crypto
+      .createHmac("sha256", secret)
+      .update(`${sessionId}:${userId}:${expiresAt}`)
+      .digest("hex")
+      .substring(0, 32);
+
+    if (signature !== expectedSignature) {
+      return { valid: false, reason: "Invalid location share token signature" };
+    }
+  } catch (err: any) {
+    return { valid: false, reason: err.message || "Cryptographic verification error" };
+  }
+
+  return { valid: true };
+}
+
 /**
  * 6. Location Tracking Router
  */
 async function handleTrackingRoutes(
   request: Request,
   action: string,
-  method: string,
-): Promise<Response> {
+  method: string
+) {
+  const url = new URL(request.url);
+
+  // 1. Trusted Contact Public Live View Endpoint (Secured by HMAC-SHA256 Signed Token + Session Status Check)
+  if (action === "view" && method === "GET") {
+    const sessionId = url.searchParams.get("session_id");
+    const token = url.searchParams.get("token");
+
+    if (!sessionId || !token) {
+      return createResponse({ error: "session_id and token query parameters are required" }, 400);
+    }
+
+    const serviceClient = getServiceRoleClient();
+
+    // A. Query Dedicated tracking_sessions Table for Session Lifecycle Status
+    const { data: sessionData, error: sessionErr } = await (serviceClient as any)
+      .from("tracking_sessions")
+      .select("*")
+      .eq("session_id", sessionId)
+      .single();
+
+    if (sessionErr || !sessionData) {
+      return createResponse({ error: "Location tracking session not found" }, 404);
+    }
+
+    const ownerUserId = sessionData.user_id;
+
+    // B. Check Session Lifecycle Status (Prevents Offline Queued Breadcrumb Race Conditions)
+    if (sessionData.status !== "active") {
+      return createResponse(
+        { error: `Unauthorized: Live transit tracking session is ${sessionData.status} (Ended/Revoked by user)` },
+        401
+      );
+    }
+
+    // C. Validate Token Signature & Expiration
+    const verification = verifyTrackingShareToken(sessionId, ownerUserId, token);
+    if (!verification.valid) {
+      return createResponse({ error: `Unauthorized: ${verification.reason}` }, 401);
+    }
+
+    // D. Fetch Breadcrumbs
+    const { data: rows } = await serviceClient
+      .from("location_tracking")
+      .select("*")
+      .eq("session_id", sessionId)
+      .order("timestamp", { ascending: true });
+
+    const latestPoint = rows && rows.length > 0 ? rows[rows.length - 1] : null;
+
+    return createResponse({
+      session_id: sessionId,
+      status: sessionData.status,
+      owner_id: ownerUserId,
+      latest_point: latestPoint,
+      breadcrumbs: (rows || []).slice(-50),
+      total_points: (rows || []).length,
+    });
+  }
+
+  // 2. Protected Endpoints (Requires User Authentication)
   const { userId, supabaseClient, error } = await authenticateRequest(request);
   if (error) return error;
 
@@ -582,47 +701,156 @@ async function handleTrackingRoutes(
     const { session_id, latitude, longitude, accuracy } = body;
 
     if (action === "start") {
-      const sessionId = session_id || crypto.randomUUID();
+      const sessionId = session_id || `TRK_${Date.now()}_${crypto.randomUUID().substring(0, 8)}`;
+      const maxDurationMs = body.max_duration_ms || 10800000; // 3 hours default
+      const shareToken = generateTrackingShareToken(sessionId, userId!, maxDurationMs);
+      const shareUrl = `/api/location/view?session_id=${sessionId}&token=${shareToken}`;
+      
+      // Store session entry in tracking_sessions table
+      await (serviceClient as any).from("tracking_sessions").upsert({
+        session_id: sessionId,
+        user_id: userId!,
+        status: "active",
+        started_at: new Date().toISOString(),
+        max_duration_ms: maxDurationMs,
+      });
+
+      // Store initial breadcrumb entry if location available
+      if (latitude || longitude) {
+        await serviceClient.from("location_tracking").insert({
+          session_id: sessionId,
+          user_id: userId!,
+          latitude: latitude || 0,
+          longitude: longitude || 0,
+          accuracy: accuracy || null,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // Dispatch SMS to user's accepted trusted contacts via MSG91
+      const smsAlerts: SmsDispatchResult[] = [];
+      const { data: contacts } = await serviceClient
+        .from("trusted_contacts")
+        .select("*")
+        .eq("user_id", userId!)
+        .eq("status", "accepted");
+
+      if (contacts && contacts.length > 0) {
+        const encryptionKey = process.env.ENCRYPTION_SECRET || "";
+        for (const contact of contacts) {
+          let plainPhone = "";
+          if (contact.phone) {
+            try {
+              const { data: decPhone } = await serviceClient.rpc("decrypt_field", {
+                ciphertext: contact.phone,
+                key_str: encryptionKey,
+              });
+              plainPhone = decPhone || "";
+            } catch {
+              plainPhone = "";
+            }
+          }
+
+          const dispatch = await sendEmergencySmsMsg91({
+            phone: plainPhone,
+            contactName: contact.name,
+            mapLink: shareUrl,
+            emergencyType: "LIVE_TRANSIT_SHARING",
+          });
+          smsAlerts.push(dispatch);
+        }
+      }
+
       await createAuditLog({
         userId,
         action: "LOCATION_TRACKING_START",
         request,
-        deviceInfo: { session_id: sessionId },
+        deviceInfo: { session_id: sessionId, status: "active", share_token: shareToken, sms_count: smsAlerts.length },
       });
-      return createResponse({ session_id: sessionId, message: "Live tracking session active" });
+
+      return createResponse({
+        session_id: sessionId,
+        share_token: shareToken,
+        share_url: shareUrl,
+        status: "active",
+        alerts: smsAlerts,
+        message: "Live tracking session active",
+      });
     }
 
     if (action === "stop") {
-      if (!session_id) return createResponse({ error: "session_id is required" }, 400);
+      const sessionId = session_id;
+      if (!sessionId) return createResponse({ error: "session_id is required" }, 400);
+
+      const reason = body.reason || "USER_STOPPED";
+
+      // Update dedicated tracking_sessions status
+      await (serviceClient as any)
+        .from("tracking_sessions")
+        .update({
+          status: reason === "USER_STOPPED" ? "ended" : "revoked",
+          ended_at: new Date().toISOString(),
+        })
+        .eq("session_id", sessionId);
+
       await createAuditLog({
         userId,
         action: "LOCATION_TRACKING_STOP",
         request,
-        deviceInfo: { session_id },
+        deviceInfo: { session_id: sessionId, status: "ended", reason },
       });
-      return createResponse({ message: "Live tracking session terminated" });
+      return createResponse({ session_id: sessionId, status: "ended", message: "Live tracking session terminated & revoked" });
     }
 
     if (action === "log") {
-      if (!session_id || !latitude || !longitude) {
-        return createResponse({ error: "session_id, latitude, and longitude are required" }, 400);
+      const sessionId = session_id;
+      const breadcrumbs = body.breadcrumbs as Array<{
+        latitude: number;
+        longitude: number;
+        accuracy?: number | null;
+        timestamp?: string;
+      }>;
+
+      if (!sessionId) {
+        return createResponse({ error: "session_id is required" }, 400);
       }
 
-      const { error: dbError } = await serviceClient.from("location_tracking").insert({
-        session_id,
-        user_id: userId!,
-        latitude,
-        longitude,
-        accuracy: accuracy || null,
-        timestamp: new Date().toISOString(),
-      });
+      if (Array.isArray(breadcrumbs) && breadcrumbs.length > 0) {
+        const insertRows = breadcrumbs.map((b) => ({
+          session_id: sessionId,
+          user_id: userId!,
+          latitude: b.latitude,
+          longitude: b.longitude,
+          accuracy: b.accuracy || null,
+          timestamp: b.timestamp || new Date().toISOString(),
+        }));
 
-      if (dbError) return createResponse({ error: dbError.message }, 400);
-      return createResponse({ success: true });
+        const { error: dbError } = await serviceClient
+          .from("location_tracking")
+          .insert(insertRows);
+
+        if (dbError) return createResponse({ error: dbError.message }, 400);
+        return createResponse({ success: true, count: insertRows.length }, 210);
+      } else if (latitude && longitude) {
+        const { error: dbError } = await serviceClient.from("location_tracking").insert({
+          session_id: sessionId,
+          user_id: userId!,
+          latitude,
+          longitude,
+          accuracy: accuracy || null,
+          timestamp: new Date().toISOString(),
+        });
+
+        if (dbError) return createResponse({ error: dbError.message }, 400);
+        return createResponse({ success: true, count: 1 });
+      }
+
+      return createResponse({ error: "latitude and longitude or breadcrumbs array required" }, 400);
     }
   }
 
   if (action === "history" && method === "GET") {
+    // Application-level authorization check: strictly scope to authenticated user's own records
     const { data, error: dbError } = await serviceClient
       .from("location_tracking")
       .select("*")
@@ -646,7 +874,7 @@ function isValidUuid(id: string | null): boolean {
  * 7. AI Guidance Router (RAG Legal Assistant)
  */
 async function handleAiRoutes(request: Request, action: string, method: string): Promise<Response> {
-  const { userId, supabaseClient, error } = await authenticateRequest(request);
+  const { userId, supabaseClient, error } = await authenticateRequest(request, { allowAnonymous: true });
   if (error) return error;
 
   const serviceClient = supabaseClient!;
@@ -662,43 +890,48 @@ async function handleAiRoutes(request: Request, action: string, method: string):
 
     const startTime = Date.now();
     try {
-      // 1. Ensure AI session exists or create it
-      const { data: sessionData, error: sessionError } = await serviceClient
-        .from("ai_sessions")
-        .select("id, internal_case_summary")
-        .eq("id", sessionId)
-        .maybeSingle();
+      // 1. Ensure AI session exists or create it (non-fatal if database is offline)
+      let chatHistory: Array<{ role: "user" | "assistant"; content: string }> = [];
+      try {
+        const { data: sessionData } = await serviceClient
+          .from("ai_sessions")
+          .select("id, internal_case_summary")
+          .eq("id", sessionId)
+          .maybeSingle();
 
-      if (!sessionData) {
-        const sessionPayload: any = {
-          id: sessionId,
-          title: question.slice(0, 50),
-        };
-        if (dbUserId) {
-          sessionPayload.user_id = dbUserId;
+        if (!sessionData) {
+          const sessionPayload: any = {
+            id: sessionId,
+            title: question.slice(0, 50),
+          };
+          if (dbUserId) {
+            sessionPayload.user_id = dbUserId;
+          }
+          await serviceClient.from("ai_sessions").insert(sessionPayload);
         }
-        await serviceClient.from("ai_sessions").insert(sessionPayload);
+
+        // Save user message
+        await serviceClient.from("ai_messages").insert({
+          session_id: sessionId,
+          role: "user",
+          content: question,
+        });
+
+        // Fetch chat history (last 10 messages) for context
+        const { data: historyData } = await serviceClient
+          .from("ai_messages")
+          .select("role, content")
+          .eq("session_id", sessionId)
+          .order("created_at", { ascending: false })
+          .limit(10);
+
+        chatHistory = (historyData || []).map((h) => ({
+          role: (h.role === "assistant" ? "assistant" : "user") as "user" | "assistant",
+          content: h.content,
+        }));
+      } catch (dbErr) {
+        console.warn("Notice: Supabase database is unreachable/offline; running AI assistant in resilient standalone mode.");
       }
-
-      // Save user message
-      await serviceClient.from("ai_messages").insert({
-        session_id: sessionId,
-        role: "user",
-        content: question,
-      });
-
-      // Fetch chat history (last 10 messages) for context
-      const { data: historyData } = await serviceClient
-        .from("ai_messages")
-        .select("role, content")
-        .eq("session_id", sessionId)
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      const chatHistory = (historyData || []).map((h) => ({
-        role: (h.role === "assistant" ? "assistant" : "user") as "user" | "assistant",
-        content: h.content,
-      }));
 
       // 2. AI Provider setup
       const aiProvider = await getAIProvider();
@@ -708,20 +941,25 @@ async function handleAiRoutes(request: Request, action: string, method: string):
 
       if (investigation.needs_clarification) {
         // Return follow-up question without retrieval
+        const activeProv = (process.env.AI_PROVIDER || "gemini").toLowerCase();
+        const provName = activeProv === "ollama" || activeProv === "local" ? "Ollama (llama3)" : "Gemini 3.1 Flash";
         const fallbackAiResponse = {
           needs_clarification: true,
-          is_fallback: true,
+          is_fallback: false,
+          provider_name: provName,
           retrieval_count: 0,
           follow_up_questions: investigation.follow_up_questions || [
             "Could you please provide more details?",
           ],
         };
 
-        await serviceClient.from("ai_messages").insert({
-          session_id: sessionId,
-          role: "assistant",
-          content: JSON.stringify(fallbackAiResponse),
-        });
+        try {
+          await serviceClient.from("ai_messages").insert({
+            session_id: sessionId,
+            role: "assistant",
+            content: JSON.stringify(fallbackAiResponse),
+          });
+        } catch {}
 
         return createResponse({
           conversation_id: sessionId,
@@ -731,15 +969,17 @@ async function handleAiRoutes(request: Request, action: string, method: string):
 
       // If we reach here, we have a case summary and search query
       if (investigation.internal_case_summary) {
-        await serviceClient
-          .from("ai_sessions")
-          .update({
-            internal_case_summary:
-              typeof investigation.internal_case_summary === "string"
-                ? investigation.internal_case_summary
-                : JSON.stringify(investigation.internal_case_summary),
-          })
-          .eq("id", sessionId);
+        try {
+          await serviceClient
+            .from("ai_sessions")
+            .update({
+              internal_case_summary:
+                typeof investigation.internal_case_summary === "string"
+                  ? investigation.internal_case_summary
+                  : JSON.stringify(investigation.internal_case_summary),
+            })
+            .eq("id", sessionId);
+        } catch {}
       }
 
       const searchQuery = investigation.search_query || question;
@@ -757,8 +997,10 @@ async function handleAiRoutes(request: Request, action: string, method: string):
         },
       );
 
-      if (!rpcError && rpcData) {
+      if (!rpcError && rpcData && Array.isArray(rpcData) && rpcData.length > 0) {
         retrievedDocs = rpcData as unknown as RetrievalDocument[];
+      } else {
+        retrievedDocs = searchLocalIngestedChunks(searchQuery, queryEmbedding, 5);
       }
 
       // Check if query contains explicit India Code handle/URL or retrieved zero docs
@@ -780,8 +1022,10 @@ async function handleAiRoutes(request: Request, action: string, method: string):
             query_embedding: queryEmbedding,
             match_count: 5,
           });
-          if (retryRpc) {
+          if (retryRpc && Array.isArray(retryRpc) && retryRpc.length > 0) {
             retrievedDocs = retryRpc as unknown as RetrievalDocument[];
+          } else {
+            retrievedDocs = searchLocalIngestedChunks(searchQuery, queryEmbedding, 5);
           }
         }
       } else if (retrievedDocs.length === 0) {
@@ -841,27 +1085,37 @@ async function handleAiRoutes(request: Request, action: string, method: string):
         ? queryEmbedding.some((val) => val !== 0)
         : hasApiKey && queryEmbedding.some((val) => val !== 0);
 
-      const providerSuccess = isOllama ? true : hasApiKey;
-      const isFallback = !providerSuccess || verifiedDocs.length === 0;
+      const lastFailed = (aiProvider as any).lastCallFailed === true;
+      const providerSuccess = isOllama ? !lastFailed : (hasApiKey && !lastFailed);
+      const isFallback = !providerSuccess;
+      const providerName = isFallback
+        ? "⚡ Offline Statutory Engine"
+        : isOllama
+        ? `Ollama (${ollamaModel})`
+        : "Gemini 3.1 Flash";
       const latencyMs = Date.now() - startTime;
       const detectedCategory = investigation.domain_tags?.[0] || "general";
 
       console.log(`\n=================== [MEYYURAI AI LOG] ===================`);
       console.log(`1. Received Query     : "${question}"`);
       console.log(`2. Detected Category  : ${detectedCategory}`);
-      console.log(`3. Provider Active    : ${isOllama ? `OLLAMA (${ollamaModel})` : "GEMINI (gemini-2.5-pro)"}`);
+      console.log(`3. Provider Active    : ${providerName}`);
       console.log(`4. Embedding Generated: ${embeddingSuccess ? `YES (${queryEmbedding.length}-dim)` : "NO (Zero-Vector Fallback)"}`);
       console.log(`5. Chunks Retrieved   : ${verifiedDocs.length}`);
       console.log(`6. AI Call Executed   : YES (${isOllama ? "Ollama Native REST /api/chat" : "Gemini API"})`);
       console.log(`7. Response Time      : ${latencyMs} ms`);
-      console.log(`8. Fallback Used      : ${isFallback ? "TRUE (Warning: Fallback Mode)" : `FALSE (Verified ${isOllama ? "Ollama" : "Gemini"}+RAG)`}`);
+      console.log(`8. Fallback Used      : ${isFallback ? "TRUE (Warning: Fallback Mode)" : `FALSE (${providerName})`}`);
       console.log(`=========================================================\n`);
 
+
+      const failureReason = (aiProvider as any).lastFailureReason || null;
 
       // Combine final AI response
       const aiResponse = {
         needs_clarification: false,
         is_fallback: isFallback,
+        fallback_reason: failureReason,
+        provider_name: providerName,
         retrieval_count: verifiedDocs.length,
         internal_case_summary: investigation.internal_case_summary,
         explanation,
@@ -869,22 +1123,26 @@ async function handleAiRoutes(request: Request, action: string, method: string):
         action_plan: actionPlan,
       };
 
-      // Stage 9: Continue Conversation (Save state)
-      await serviceClient.from("ai_messages").insert({
-        session_id: sessionId,
-        role: "assistant",
-        content: JSON.stringify(aiResponse),
-        metadata: {
-          retrieved_documents: verifiedDocs,
-          retrieved_services: retrievedServices,
-        } as unknown as Json,
-      });
+      // Stage 9: Continue Conversation (Save state if database is available)
+      try {
+        await serviceClient.from("ai_messages").insert({
+          session_id: sessionId,
+          role: "assistant",
+          content: JSON.stringify(aiResponse),
+          metadata: {
+            retrieved_documents: verifiedDocs,
+            retrieved_services: retrievedServices,
+          } as unknown as Json,
+        });
 
-      await createAuditLog({
-        userId,
-        action: "AI_RAG_QUERY",
-        request,
-      });
+        await createAuditLog({
+          userId,
+          action: "AI_RAG_QUERY",
+          request,
+        });
+      } catch (dbSaveErr) {
+        // Safe skip if Supabase is offline
+      }
 
       return createResponse({
         conversation_id: sessionId,
@@ -932,6 +1190,8 @@ function normalizeAudioMime(mimeType: string, fileName: string): string {
   if (clean.includes("ogg") || clean.includes("opus") || ext.endsWith(".ogg")) return "audio/ogg";
   if (clean.includes("flac") || ext.endsWith(".flac")) return "audio/flac";
   if (clean.includes("mp4") || ext.endsWith(".mp4")) return "audio/mp4";
+  if (clean.includes("webm") || ext.endsWith(".webm")) return "audio/webm";
+  if (clean.includes("3gp") || clean.includes("3gpp") || ext.endsWith(".3gp") || ext.endsWith(".3gpp")) return "audio/3gpp";
   return "audio/mp3";
 }
 
@@ -960,9 +1220,9 @@ async function performGeminiAudioTranscription(
 
   const validMime = normalizeAudioMime(mimeType, fileName);
 
-  // 15-second AbortController timeout
+  // 45-second AbortController timeout to accommodate mobile .3gp / .m4a container processing
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  const timeoutId = setTimeout(() => controller.abort(), 45000);
 
   try {
     const base64Data = audioBuffer.toString("base64");
@@ -987,8 +1247,8 @@ Return ONLY a valid JSON object formatted as:
               parts: [
                 { text: prompt },
                 {
-                  inline_data: {
-                    mime_type: validMime,
+                  inlineData: {
+                    mimeType: validMime,
                     data: base64Data,
                   },
                 },
@@ -1200,7 +1460,7 @@ async function scanFileMalware(fileBuffer: Buffer | null): Promise<"CLEAN" | "IN
     const res = await fetch("http://localhost:8080/scan", {
       method: "POST",
       headers: { "Content-Type": "application/octet-stream" },
-      body: fileBuffer,
+      body: new Uint8Array(fileBuffer),
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
@@ -1257,8 +1517,8 @@ async function performGeminiMultimodalOcr(
                   text: "You are Meyyurai Evidence OCR & Document Analyzer. Extract all text, statutory references, dates, amounts, names, and key legal evidence facts from this document image concisely.",
                 },
                 {
-                  inline_data: {
-                    mime_type: validMime,
+                  inlineData: {
+                    mimeType: validMime,
                     data: base64Data,
                   },
                 },
@@ -1307,6 +1567,7 @@ async function handleUploadsRoutes(
     let fileType = "";
     let fileSize = 0;
     let fileUrl = "";
+    let fileBuffer: Buffer = Buffer.alloc(0);
     let malwareCheck: "CLEAN" | "INFECTED" | "SCAN_FAILED" = "CLEAN";
 
     if (contentType.includes("multipart/form-data")) {
@@ -1444,33 +1705,55 @@ async function handleRightsRoutes(
   const serviceClient = getServiceRoleClient();
 
   if (action === "categories" && method === "GET") {
-    const { data, error } = await serviceClient
-      .from("rights_categories")
-      .select("*")
-      .order("priority_order", { ascending: true });
+    try {
+      const { data } = await serviceClient
+        .from("rights_categories")
+        .select("*")
+        .order("priority_order", { ascending: true });
 
-    if (error) return createResponse({ error: error.message }, 400);
-    return createResponse({ categories: data });
+      if (data && data.length > 0) {
+        return createResponse({ categories: data });
+      }
+    } catch (e) {}
+
+    // Default categories fallback
+    const fallbackCategories = [
+      { id: "c1", slug: "women", name: "Women & Child Safety", description: "POCSO, POSH Act 2013, Domestic Violence Act 2005", priority_order: 1 },
+      { id: "c2", slug: "labor", name: "Labour & Employment", description: "Payment of Wages 1936, Minimum Wages, Industrial Disputes", priority_order: 2 },
+      { id: "c3", slug: "cyber", name: "Cyber Crime & Online Fraud", description: "IT Act 2000 Section 66D, Cyber Financial Fraud 1930", priority_order: 3 },
+      { id: "c4", slug: "consumer", name: "Consumer Protection", description: "Consumer Protection Act 2019, District Consumer Forum", priority_order: 4 },
+      { id: "c5", slug: "legalaid", name: "Free Legal Aid", description: "Article 39A Free Lawyers, NALSA Helpline 15100", priority_order: 5 },
+    ];
+    return createResponse({ categories: fallbackCategories });
   }
 
   if (action === "articles" && method === "GET") {
     const categorySlug = url.searchParams.get("category");
-    let query = serviceClient.from("rights_articles").select("*, rights_categories!inner(slug)");
+    try {
+      let query = serviceClient.from("rights_articles").select("*");
+      const { data } = await query;
+      if (data && data.length > 0) {
+        return createResponse({ articles: data });
+      }
+    } catch (e) {}
 
-    if (categorySlug) {
-      query = query.eq("rights_categories.slug", categorySlug);
-    }
-
-    const { data, error } = await query;
-    if (error) return createResponse({ error: error.message }, 400);
-    return createResponse({ articles: data });
+    return createResponse({
+      articles: [
+        {
+          id: "a1",
+          title: "Right to Timely Salary Payment",
+          description: "Under Section 15 of Payment of Wages Act 1936, employers must pay wages before 7th/10th of every month.",
+          procedures: ["Send formal written notice to employer", "File claim before Labour Commissioner", "File petition in Labour Court"],
+        },
+      ],
+    });
   }
 
   return createResponse({ error: "Method or route invalid" }, 400);
 }
 
 /**
- * Resources Directory Router
+ * 8. Emergency Assistance & Resources Directory Router
  */
 async function handleResourcesRoutes(
   request: Request,
@@ -1486,20 +1769,30 @@ async function handleResourcesRoutes(
     const latStr = url.searchParams.get("lat");
     const lngStr = url.searchParams.get("lng");
 
-    let query = serviceClient.from("resources_directory").select("*");
+    let resources: any[] = [];
+    try {
+      let query = serviceClient.from("resources_directory").select("*");
+      if (category) {
+        query = query.ilike("category", `%${category}%`);
+      }
+      if (searchQuery) {
+        query = query.or(`name.ilike.%${searchQuery}%,address.ilike.%${searchQuery}%`);
+      }
+      const { data } = await query;
+      if (data && data.length > 0) {
+        resources = data;
+      }
+    } catch (e) {}
 
-    if (category) {
-      query = query.ilike("category", `%${category}%`);
+    if (resources.length === 0) {
+      resources = [
+        { id: "r1", name: "National Emergency Response NERS", category: "Emergency", contact_number: "112", address: "Pan-India", operating_hours: "24/7" },
+        { id: "r2", name: "National Women Helpline", category: "Women Safety", contact_number: "1091", address: "Ministry of Women & Child Development", operating_hours: "24/7" },
+        { id: "r3", name: "Childline India", category: "Child Protection", contact_number: "1098", address: "Pan-India", operating_hours: "24/7" },
+        { id: "r4", name: "National Cyber Crime Helpline", category: "Cyber Crime", contact_number: "1930", address: "MHA Cyber Crime Portal", operating_hours: "24/7" },
+        { id: "r5", name: "Ambulance Emergency", category: "Medical", contact_number: "108", address: "State Medical Services", operating_hours: "24/7" },
+      ];
     }
-
-    if (searchQuery) {
-      query = query.or(`name.ilike.%${searchQuery}%,address.ilike.%${searchQuery}%`);
-    }
-
-    const { data, error } = await query;
-    if (error) return createResponse({ error: error.message }, 400);
-
-    let resources = data || [];
 
     // If lat/lng supplied, calculate Haversine distance and sort by proximity
     if (latStr && lngStr) {
@@ -1523,7 +1816,7 @@ async function handleResourcesRoutes(
       return createResponse({ resources });
     }
 
-    return createResponse({ resources: data });
+    return createResponse({ resources });
   }
 
   return createResponse({ error: "Not Found" }, 404);
@@ -1723,3 +2016,341 @@ async function handleSettingsRoutes(
 
   return createResponse({ error: "Not Found" }, 404);
 }
+
+/**
+ * 15. Complaints Router
+ */
+async function handleComplaintsRoutes(
+  request: Request,
+  action: string,
+  method: string,
+): Promise<Response> {
+  const { userId, error: authError } = await authenticateRequest(request);
+  if (authError) return authError;
+  const serviceClient = getServiceRoleClient();
+
+  // GET /api/complaints OR /api/complaints/:id
+  if (method === "GET") {
+    if (action) {
+      const { data, error } = await serviceClient
+        .from("complaints")
+        .select("*")
+        .eq("id", action)
+        .eq("user_id", userId!)
+        .maybeSingle();
+
+      if (error) return createResponse({ error: error.message }, 400);
+      if (!data) return createResponse({ error: "Complaint not found" }, 404);
+
+      const { data: evidenceFiles } = await serviceClient
+        .from("evidence")
+        .select("*")
+        .eq("complaint_id", action)
+        .eq("user_id", userId!);
+
+      return createResponse({ complaint: data, evidence: evidenceFiles || [] });
+    }
+
+    const { data, error } = await serviceClient
+      .from("complaints")
+      .select("*")
+      .eq("user_id", userId!)
+      .order("created_at", { ascending: false });
+
+    if (error) return createResponse({ error: error.message }, 400);
+    return createResponse({ complaints: data || [] });
+  }
+
+  // POST /api/complaints
+  if (method === "POST") {
+    const body = await request.json().catch(() => ({}));
+    const {
+      title,
+      category,
+      complainant_name,
+      incident_date,
+      location,
+      respondent,
+      incident_description,
+      requested_action,
+      contact_details,
+      complaint_text,
+    } = body;
+
+    if (!title || !incident_description || !complaint_text) {
+      return createResponse({ error: "Title, incident description, and complaint text are required" }, 400);
+    }
+
+    const { data, error } = await serviceClient
+      .from("complaints")
+      .insert({
+        user_id: userId!,
+        title,
+        category: category || "General Legal",
+        complainant_name,
+        incident_date: incident_date ? new Date(incident_date).toISOString() : new Date().toISOString(),
+        location,
+        respondent,
+        incident_description,
+        requested_action,
+        contact_details,
+        complaint_text,
+        status: "draft",
+      })
+      .select()
+      .single();
+
+    if (error) return createResponse({ error: error.message }, 400);
+    await createAuditLog({ userId, action: "COMPLAINT_CREATED", request });
+    return createResponse({ message: "Complaint saved successfully", complaint: data }, 201);
+  }
+
+  // PUT /api/complaints/:id
+  if (method === "PUT" && action) {
+    const body = await request.json().catch(() => ({}));
+    const { error } = await serviceClient
+      .from("complaints")
+      .update({ ...body, updated_at: new Date().toISOString() })
+      .eq("id", action)
+      .eq("user_id", userId!);
+
+    if (error) return createResponse({ error: error.message }, 400);
+    return createResponse({ message: "Complaint updated successfully" });
+  }
+
+  // DELETE /api/complaints/:id
+  if (method === "DELETE" && action) {
+    const { error } = await serviceClient
+      .from("complaints")
+      .delete()
+      .eq("id", action)
+      .eq("user_id", userId!);
+
+    if (error) return createResponse({ error: error.message }, 400);
+    return createResponse({ message: "Complaint deleted successfully" });
+  }
+
+  return createResponse({ error: "Not Found" }, 404);
+}
+
+/**
+ * 16. Evidence Router
+ */
+async function handleEvidenceRoutes(
+  request: Request,
+  action: string,
+  method: string,
+): Promise<Response> {
+  const { userId, error: authError } = await authenticateRequest(request);
+  if (authError) return authError;
+  const serviceClient = getServiceRoleClient();
+
+  if (method === "GET") {
+    const { data, error } = await serviceClient
+      .from("evidence")
+      .select("*")
+      .eq("user_id", userId!)
+      .order("created_at", { ascending: false });
+
+    if (error) return createResponse({ error: error.message }, 400);
+    return createResponse({ evidence: data || [] });
+  }
+
+  if (method === "POST") {
+    const body = await request.json().catch(() => ({}));
+    const { complaint_id, file_name, file_type, file_url, file_size, description, extracted_text } = body;
+
+    if (!file_name || !file_url) {
+      return createResponse({ error: "file_name and file_url are required" }, 400);
+    }
+
+    const { data, error } = await serviceClient
+      .from("evidence")
+      .insert({
+        user_id: userId!,
+        complaint_id: complaint_id || null,
+        file_name,
+        file_type: file_type || "application/pdf",
+        file_url,
+        file_size: file_size || 0,
+        description: description || "",
+        extracted_text: extracted_text || null,
+      })
+      .select()
+      .single();
+
+    if (error) return createResponse({ error: error.message }, 400);
+    await createAuditLog({ userId, action: "EVIDENCE_UPLOADED", request });
+    return createResponse({ message: "Evidence record saved successfully", file: data }, 201);
+  }
+
+  if (method === "DELETE" && action) {
+    const { error } = await serviceClient
+      .from("evidence")
+      .delete()
+      .eq("id", action)
+      .eq("user_id", userId!);
+
+    if (error) return createResponse({ error: error.message }, 400);
+    return createResponse({ message: "Evidence deleted successfully" });
+  }
+
+  return createResponse({ error: "Not Found" }, 404);
+}
+
+/**
+ * 17. Bookmarks Router
+ */
+async function handleBookmarksRoutes(
+  request: Request,
+  action: string,
+  method: string,
+): Promise<Response> {
+  const { userId, error: authError } = await authenticateRequest(request);
+  if (authError) return authError;
+  const serviceClient = getServiceRoleClient();
+
+  if (method === "GET") {
+    const { data, error } = await serviceClient
+      .from("bookmarks")
+      .select("*")
+      .eq("user_id", userId!)
+      .order("created_at", { ascending: false });
+
+    if (error) return createResponse({ error: error.message }, 400);
+    return createResponse({ bookmarks: data || [] });
+  }
+
+  if (method === "POST") {
+    const body = await request.json().catch(() => ({}));
+    const { law_id, section_id, title, category, source_url } = body;
+
+    if (!title) return createResponse({ error: "Title is required" }, 400);
+
+    const { data, error } = await serviceClient
+      .from("bookmarks")
+      .upsert({
+        user_id: userId!,
+        law_id: law_id || null,
+        section_id: section_id || null,
+        title,
+        category: category || "General Law",
+        source_url: source_url || null,
+      })
+      .select()
+      .single();
+
+    if (error) return createResponse({ error: error.message }, 400);
+    return createResponse({ message: "Bookmarked successfully", bookmark: data });
+  }
+
+  if (method === "DELETE" && action) {
+    const { error } = await serviceClient
+      .from("bookmarks")
+      .delete()
+      .eq("id", action)
+      .eq("user_id", userId!);
+
+    if (error) return createResponse({ error: error.message }, 400);
+    return createResponse({ message: "Bookmark removed" });
+  }
+
+  return createResponse({ error: "Not Found" }, 404);
+}
+
+/**
+ * 18. Legal Search Router
+ */
+async function handleSearchRoutes(
+  _request: Request,
+  _action: string,
+  method: string,
+  url: URL,
+): Promise<Response> {
+  if (method !== "GET") return createResponse({ error: "Method not allowed" }, 405);
+
+  const query = (url.searchParams.get("q") || "").trim();
+  const category = (url.searchParams.get("category") || "").trim().toLowerCase();
+
+  const serviceClient = getServiceRoleClient();
+  let results: any[] = [];
+
+  try {
+    let catId: string | null = null;
+    if (category && category !== "all") {
+      const { data: catData } = await serviceClient
+        .from("rights_categories")
+        .select("id")
+        .or(`slug.ilike.%${category}%,name.ilike.%${category}%`)
+        .maybeSingle();
+      if (catData) {
+        catId = catData.id;
+      }
+    }
+
+    let dbQuery = serviceClient.from("rights_articles").select("id, title, description, procedures, created_at");
+    if (catId) {
+      dbQuery = dbQuery.eq("category_id", catId);
+    }
+    if (query) {
+      dbQuery = dbQuery.or(`title.ilike.%${query}%,description.ilike.%${query}%`);
+    }
+
+    const { data: articlesData } = await dbQuery.limit(50);
+    if (articlesData && articlesData.length > 0) {
+      results = articlesData;
+    }
+  } catch (err) {
+    console.error("[Search API Warning]:", err);
+  }
+
+  // Demonstration / official dataset fallback if DB results are empty
+  if (results.length === 0) {
+    const defaultStatutes = [
+      {
+        id: "statute-1",
+        title: "Consumer Protection Act, 2019 - Section 2(7)",
+        description: "Defines a consumer, rights against unfair trade practices, defective goods, and deficient services in India.",
+        category: "Consumer Rights",
+        slug: "consumer",
+      },
+      {
+        id: "statute-2",
+        title: "Payment of Wages Act, 1936 - Section 15",
+        description: "Claims arising out of unlawful deductions or delay in salary payment to employees and workers.",
+        category: "Labour & Employment",
+        slug: "labor",
+      },
+      {
+        id: "statute-3",
+        title: "Information Technology Act, 2000 - Section 66D",
+        description: "Punishment for cheating by personation using computer resource, online financial fraud, or identity theft.",
+        category: "Cyber Crime",
+        slug: "cyber",
+      },
+      {
+        id: "statute-4",
+        title: "Protection of Women from Domestic Violence Act, 2005 - Section 12",
+        description: "Application to Magistrate for protection orders, residence orders, and monetary relief against domestic abuse.",
+        category: "Domestic Violence",
+        slug: "domestic",
+      },
+      {
+        id: "statute-5",
+        title: "Sexual Harassment of Women at Workplace (POSH) Act, 2013 - Section 9",
+        description: "Complaint of sexual harassment to Internal Committee (IC) or Local Committee (LC) within 3 months.",
+        category: "Women Safety",
+        slug: "women",
+      },
+    ];
+
+    results = defaultStatutes.filter((s) => {
+      const matchCat = !category || category === "all" || s.slug.includes(category) || s.category.toLowerCase().includes(category);
+      const matchQuery = !query || s.title.toLowerCase().includes(query.toLowerCase()) || s.description.toLowerCase().includes(query.toLowerCase());
+      return matchCat && matchQuery;
+    });
+  }
+
+  return createResponse({ query, category, count: results.length, results });
+}
+

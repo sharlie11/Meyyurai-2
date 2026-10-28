@@ -26,7 +26,14 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { CategoryDetailContent } from "./rights.$category";
-import { RIGHTS_DATA, RelevantLaw, Scheme, AuthorityOffice } from "@/lib/data/rights-data";
+import {
+  RIGHTS_DATA,
+  RelevantLaw,
+  Scheme,
+  AuthorityOffice,
+  getLawOfficialUrl,
+  getLawSectionUrl,
+} from "@/lib/data/rights-data";
 
 export const Route = createFileRoute("/_authenticated/rights")({
   head: () => ({
@@ -128,7 +135,7 @@ export const rightsCategories = [
   },
 ] as const;
 
-function RightsScreen() {
+export function RightsScreen() {
   const { t } = useI18n();
   const [q, setQ] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -274,16 +281,26 @@ function RightsScreen() {
                             </span>
                             <h5 className="font-bold text-base text-foreground mt-1">{law.actName}</h5>
                           </div>
-                          {law.officialUrl && (
+                          <div className="flex flex-wrap items-center gap-1.5">
                             <a
-                              href={law.officialUrl}
+                              href={getLawSectionUrl(law)}
                               target="_blank"
                               rel="noreferrer"
-                              className="shrink-0 flex items-center gap-1 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-xl transition-colors"
+                              className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:text-amber-700 bg-amber-500/10 px-2.5 py-1.5 rounded-xl transition-colors"
+                              title="View exact statutory wording of this section"
                             >
-                              <ExternalLink className="h-3.5 w-3.5" /> Official Act
+                              <Scale className="h-3 w-3" /> Exact Section ↗
                             </a>
-                          )}
+                            <a
+                              href={getLawOfficialUrl(law)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-2.5 py-1.5 rounded-xl transition-colors"
+                              title="Open Official Ministry Gazette PDF publication"
+                            >
+                              <ExternalLink className="h-3 w-3" /> Official Gazette PDF ↗
+                            </a>
+                          </div>
                         </div>
 
                         <p className="text-xs font-bold text-primary">{law.section}</p>

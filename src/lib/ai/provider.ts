@@ -85,6 +85,8 @@ export interface ActionPlanGeneratorResponse {
 export interface GeneratedAiResponse {
   needs_clarification: boolean;
   is_fallback?: boolean;
+  fallback_reason?: string | null;
+  provider_name?: string;
   retrieval_count?: number;
   follow_up_questions?: string[];
   explanation?: ExplanationGeneratorResponse;
@@ -150,15 +152,93 @@ export interface AIProvider {
 }
 
 
+/**
+ * Response Validation & Citation Traceability Filter
+ * Ensures that:
+ * 1. If retrievedChunks is 0/empty, no section numbers are invented, and situation_summary explicitly states:
+ *    "I couldn't find a specific matching statute — here's general guidance, please verify with NALSA (15100) or a lawyer"
+ * 2. If retrievedChunks is non-empty, every cited act_name/section in relevant_laws must correspond to a chunk in retrievedChunks.
+ */
+export function validateAndFilterCitations(
+  response: CombinedRAGResponse,
+  retrievedDocs: RetrievalDocument[],
+): CombinedRAGResponse {
+  if (!retrievedDocs || retrievedDocs.length === 0) {
+    const zeroMsg = "I couldn't find a specific matching statute — here's general guidance, please verify with NALSA (15100) or a lawyer";
+    response.explanation.relevant_laws = [];
+    if (!response.explanation.situation_summary.includes("NALSA")) {
+      response.explanation.situation_summary = `${zeroMsg}. ${response.explanation.situation_summary}`;
+    }
+
+    // Ensure NALSA legal aid helpline is included in guidance
+    const hasNalsa = response.guidance.government_helplines?.some((h) => h.number === "15100" || h.name.includes("NALSA"));
+    if (!hasNalsa) {
+      response.guidance.government_helplines = response.guidance.government_helplines || [];
+      response.guidance.government_helplines.unshift({
+        name: "National Legal Services Authority (NALSA)",
+        number: "15100",
+        description: "24x7 Free Legal Advice & Lawyer Assistance Helpline",
+      });
+    }
+
+    return response;
+  }
+
+  // Non-empty retrievedDocs: Verify every cited act and section against retrievedDocs
+  const validLaws: Array<{ act_name: string; section: string; official_source: string; official_url: string }> = [];
+
+  for (const law of response.explanation.relevant_laws || []) {
+    const citedAct = (law.act_name || "").toLowerCase();
+    const citedSec = (law.section || "").toLowerCase();
+
+    // Check if any chunk in retrievedDocs matches this citation
+    const isMatch = retrievedDocs.some((doc) => {
+      const docAct = (doc.act_name || "").toLowerCase();
+      const docSec = (doc.section_number || "").toLowerCase();
+      const docText = (doc.official_text || "").toLowerCase();
+
+      // Extract section numbers for comparison
+      const citedNum = citedSec.match(/\d+[a-z]?/i)?.[0];
+      const docNum = docSec.match(/\d+[a-z]?/i)?.[0];
+
+      const actMatches = !citedAct || docAct.includes(citedAct) || citedAct.includes(docAct);
+      const secMatches = (citedNum && docNum && citedNum === docNum) || docSec.includes(citedSec) || docText.includes(citedSec);
+
+      return actMatches && secMatches;
+    });
+
+    if (isMatch) {
+      validLaws.push(law);
+    } else {
+      console.warn(`⚠️ [Citation Validation]: Purged unretrieved citation "${law.act_name} ${law.section}" from AI output.`);
+    }
+  }
+
+  response.explanation.relevant_laws = validLaws;
+  return response;
+}
+
 export interface AIFactoryOptions {
-  provider?: "gemini" | "ollama" | "local" | "openai" | "anthropic";
+  provider?: "gemini" | "ollama" | "local" | "openai" | "anthropic" | "openrouter";
 }
 
 /**
  * Factory to get the configured AI provider.
  */
 export async function getAIProvider(options?: AIFactoryOptions): Promise<AIProvider> {
-  const providerType = (options?.provider || process.env.AI_PROVIDER || "gemini").toLowerCase();
+  const openRouterKey = (process.env.OPENROUTER_API_KEY || "").trim();
+  const rawProvider = (options?.provider || process.env.AI_PROVIDER || "").toLowerCase();
+
+  const providerType = rawProvider
+    ? rawProvider
+    : openRouterKey && !openRouterKey.startsWith("your_")
+    ? "openrouter"
+    : "gemini";
+
+  if (providerType === "openrouter") {
+    const { OpenRouterProvider } = await import("./providers/openrouter");
+    return new OpenRouterProvider();
+  }
 
   if (providerType === "gemini") {
     const { GeminiProvider } = await import("./providers/gemini");
@@ -172,4 +252,6 @@ export async function getAIProvider(options?: AIFactoryOptions): Promise<AIProvi
 
   throw new Error(`AI Provider ${providerType} is not supported or not implemented.`);
 }
+
+
 

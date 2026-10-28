@@ -10,20 +10,50 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as Reset_passwordRouteImport } from './routes/reset_password'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
-import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedSearchRouteImport } from './routes/_authenticated/search'
 import { Route as AuthenticatedRightsRouteImport } from './routes/_authenticated/rights'
 import { Route as AuthenticatedResourcesRouteImport } from './routes/_authenticated/resources'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
+import { Route as AuthenticatedLegalRouteImport } from './routes/_authenticated/legal'
+import { Route as AuthenticatedEvidenceRouteImport } from './routes/_authenticated/evidence'
+import { Route as AuthenticatedEmergencyRouteImport } from './routes/_authenticated/emergency'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedComplaintsRouteImport } from './routes/_authenticated/complaints'
+import { Route as AuthenticatedAssistantRouteImport } from './routes/_authenticated/assistant'
 import { Route as AuthenticatedAiRouteImport } from './routes/_authenticated/ai'
+import { Route as AuthenticatedComplaintsIndexRouteImport } from './routes/_authenticated/complaints.index'
 import { Route as AuthenticatedRightsCategoryRouteImport } from './routes/_authenticated/rights.$category'
+import { Route as AuthenticatedLegalIdRouteImport } from './routes/_authenticated/legal.$id'
+import { Route as AuthenticatedComplaintsCreateRouteImport } from './routes/_authenticated/complaints.create'
+import { Route as AuthenticatedComplaintsIdRouteImport } from './routes/_authenticated/complaints.$id'
 
 const Reset_passwordRoute = Reset_passwordRouteImport.update({
   id: '/reset_password',
   path: '/reset_password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -35,15 +65,25 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AuthenticatedRouteRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSplatRoute = ApiSplatRouteImport.update({
   id: '/api/$',
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSearchRoute = AuthenticatedSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedRightsRoute = AuthenticatedRightsRouteImport.update({
   id: '/rights',
@@ -65,99 +105,244 @@ const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLegalRoute = AuthenticatedLegalRouteImport.update({
+  id: '/legal',
+  path: '/legal',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedEvidenceRoute = AuthenticatedEvidenceRouteImport.update({
+  id: '/evidence',
+  path: '/evidence',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedEmergencyRoute = AuthenticatedEmergencyRouteImport.update({
+  id: '/emergency',
+  path: '/emergency',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedComplaintsRoute = AuthenticatedComplaintsRouteImport.update({
+  id: '/complaints',
+  path: '/complaints',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAssistantRoute = AuthenticatedAssistantRouteImport.update({
+  id: '/assistant',
+  path: '/assistant',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAiRoute = AuthenticatedAiRouteImport.update({
   id: '/ai',
   path: '/ai',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedComplaintsIndexRoute =
+  AuthenticatedComplaintsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedComplaintsRoute,
+  } as any)
 const AuthenticatedRightsCategoryRoute =
   AuthenticatedRightsCategoryRouteImport.update({
     id: '/$category',
     path: '/$category',
     getParentRoute: () => AuthenticatedRightsRoute,
   } as any)
+const AuthenticatedLegalIdRoute = AuthenticatedLegalIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedLegalRoute,
+} as any)
+const AuthenticatedComplaintsCreateRoute =
+  AuthenticatedComplaintsCreateRouteImport.update({
+    id: '/create',
+    path: '/create',
+    getParentRoute: () => AuthenticatedComplaintsRoute,
+  } as any)
+const AuthenticatedComplaintsIdRoute =
+  AuthenticatedComplaintsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedComplaintsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AuthenticatedIndexRoute
+  '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
   '/reset_password': typeof Reset_passwordRoute
   '/ai': typeof AuthenticatedAiRoute
+  '/assistant': typeof AuthenticatedAssistantRoute
+  '/complaints': typeof AuthenticatedComplaintsRouteWithChildren
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/emergency': typeof AuthenticatedEmergencyRoute
+  '/evidence': typeof AuthenticatedEvidenceRoute
+  '/legal': typeof AuthenticatedLegalRouteWithChildren
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/resources': typeof AuthenticatedResourcesRoute
   '/rights': typeof AuthenticatedRightsRouteWithChildren
+  '/search': typeof AuthenticatedSearchRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/api/$': typeof ApiSplatRoute
+  '/complaints/$id': typeof AuthenticatedComplaintsIdRoute
+  '/complaints/create': typeof AuthenticatedComplaintsCreateRoute
+  '/legal/$id': typeof AuthenticatedLegalIdRoute
   '/rights/$category': typeof AuthenticatedRightsCategoryRoute
+  '/complaints/': typeof AuthenticatedComplaintsIndexRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
   '/reset_password': typeof Reset_passwordRoute
   '/ai': typeof AuthenticatedAiRoute
+  '/assistant': typeof AuthenticatedAssistantRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/emergency': typeof AuthenticatedEmergencyRoute
+  '/evidence': typeof AuthenticatedEvidenceRoute
+  '/legal': typeof AuthenticatedLegalRouteWithChildren
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/resources': typeof AuthenticatedResourcesRoute
   '/rights': typeof AuthenticatedRightsRouteWithChildren
+  '/search': typeof AuthenticatedSearchRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/api/$': typeof ApiSplatRoute
-  '/': typeof AuthenticatedIndexRoute
+  '/complaints/$id': typeof AuthenticatedComplaintsIdRoute
+  '/complaints/create': typeof AuthenticatedComplaintsCreateRoute
+  '/legal/$id': typeof AuthenticatedLegalIdRoute
   '/rights/$category': typeof AuthenticatedRightsCategoryRoute
+  '/complaints': typeof AuthenticatedComplaintsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/forgot-password': typeof ForgotPasswordRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
   '/reset_password': typeof Reset_passwordRoute
   '/_authenticated/ai': typeof AuthenticatedAiRoute
+  '/_authenticated/assistant': typeof AuthenticatedAssistantRoute
+  '/_authenticated/complaints': typeof AuthenticatedComplaintsRouteWithChildren
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/emergency': typeof AuthenticatedEmergencyRoute
+  '/_authenticated/evidence': typeof AuthenticatedEvidenceRoute
+  '/_authenticated/legal': typeof AuthenticatedLegalRouteWithChildren
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/resources': typeof AuthenticatedResourcesRoute
   '/_authenticated/rights': typeof AuthenticatedRightsRouteWithChildren
+  '/_authenticated/search': typeof AuthenticatedSearchRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/api/$': typeof ApiSplatRoute
-  '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/complaints/$id': typeof AuthenticatedComplaintsIdRoute
+  '/_authenticated/complaints/create': typeof AuthenticatedComplaintsCreateRoute
+  '/_authenticated/legal/$id': typeof AuthenticatedLegalIdRoute
   '/_authenticated/rights/$category': typeof AuthenticatedRightsCategoryRoute
+  '/_authenticated/complaints/': typeof AuthenticatedComplaintsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/auth'
+    | '/forgot-password'
+    | '/login'
+    | '/register'
     | '/reset_password'
     | '/ai'
+    | '/assistant'
+    | '/complaints'
+    | '/dashboard'
+    | '/emergency'
+    | '/evidence'
+    | '/legal'
     | '/onboarding'
     | '/profile'
     | '/resources'
     | '/rights'
+    | '/search'
+    | '/settings'
     | '/api/$'
+    | '/complaints/$id'
+    | '/complaints/create'
+    | '/legal/$id'
     | '/rights/$category'
+    | '/complaints/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/auth'
+    | '/forgot-password'
+    | '/login'
+    | '/register'
     | '/reset_password'
     | '/ai'
+    | '/assistant'
+    | '/dashboard'
+    | '/emergency'
+    | '/evidence'
+    | '/legal'
     | '/onboarding'
     | '/profile'
     | '/resources'
     | '/rights'
+    | '/search'
+    | '/settings'
     | '/api/$'
-    | '/'
+    | '/complaints/$id'
+    | '/complaints/create'
+    | '/legal/$id'
     | '/rights/$category'
+    | '/complaints'
   id:
     | '__root__'
+    | '/'
     | '/_authenticated'
     | '/auth'
+    | '/forgot-password'
+    | '/login'
+    | '/register'
     | '/reset_password'
     | '/_authenticated/ai'
+    | '/_authenticated/assistant'
+    | '/_authenticated/complaints'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/emergency'
+    | '/_authenticated/evidence'
+    | '/_authenticated/legal'
     | '/_authenticated/onboarding'
     | '/_authenticated/profile'
     | '/_authenticated/resources'
     | '/_authenticated/rights'
+    | '/_authenticated/search'
+    | '/_authenticated/settings'
     | '/api/$'
-    | '/_authenticated/'
+    | '/_authenticated/complaints/$id'
+    | '/_authenticated/complaints/create'
+    | '/_authenticated/legal/$id'
     | '/_authenticated/rights/$category'
+    | '/_authenticated/complaints/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
+  LoginRoute: typeof LoginRoute
+  RegisterRoute: typeof RegisterRoute
   Reset_passwordRoute: typeof Reset_passwordRoute
   ApiSplatRoute: typeof ApiSplatRoute
 }
@@ -169,6 +354,27 @@ declare module '@tanstack/react-router' {
       path: '/reset_password'
       fullPath: '/reset_password'
       preLoaderRoute: typeof Reset_passwordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -185,12 +391,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/': {
-      id: '/_authenticated/'
+    '/': {
+      id: '/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/$': {
       id: '/api/$'
@@ -198,6 +404,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/$'
       preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/search': {
+      id: '/_authenticated/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof AuthenticatedSearchRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rights': {
       id: '/_authenticated/rights'
@@ -227,12 +447,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/legal': {
+      id: '/_authenticated/legal'
+      path: '/legal'
+      fullPath: '/legal'
+      preLoaderRoute: typeof AuthenticatedLegalRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/evidence': {
+      id: '/_authenticated/evidence'
+      path: '/evidence'
+      fullPath: '/evidence'
+      preLoaderRoute: typeof AuthenticatedEvidenceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/emergency': {
+      id: '/_authenticated/emergency'
+      path: '/emergency'
+      fullPath: '/emergency'
+      preLoaderRoute: typeof AuthenticatedEmergencyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/complaints': {
+      id: '/_authenticated/complaints'
+      path: '/complaints'
+      fullPath: '/complaints'
+      preLoaderRoute: typeof AuthenticatedComplaintsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/assistant': {
+      id: '/_authenticated/assistant'
+      path: '/assistant'
+      fullPath: '/assistant'
+      preLoaderRoute: typeof AuthenticatedAssistantRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/ai': {
       id: '/_authenticated/ai'
       path: '/ai'
       fullPath: '/ai'
       preLoaderRoute: typeof AuthenticatedAiRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/complaints/': {
+      id: '/_authenticated/complaints/'
+      path: '/'
+      fullPath: '/complaints/'
+      preLoaderRoute: typeof AuthenticatedComplaintsIndexRouteImport
+      parentRoute: typeof AuthenticatedComplaintsRoute
     }
     '/_authenticated/rights/$category': {
       id: '/_authenticated/rights/$category'
@@ -241,8 +510,58 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRightsCategoryRouteImport
       parentRoute: typeof AuthenticatedRightsRoute
     }
+    '/_authenticated/legal/$id': {
+      id: '/_authenticated/legal/$id'
+      path: '/$id'
+      fullPath: '/legal/$id'
+      preLoaderRoute: typeof AuthenticatedLegalIdRouteImport
+      parentRoute: typeof AuthenticatedLegalRoute
+    }
+    '/_authenticated/complaints/create': {
+      id: '/_authenticated/complaints/create'
+      path: '/create'
+      fullPath: '/complaints/create'
+      preLoaderRoute: typeof AuthenticatedComplaintsCreateRouteImport
+      parentRoute: typeof AuthenticatedComplaintsRoute
+    }
+    '/_authenticated/complaints/$id': {
+      id: '/_authenticated/complaints/$id'
+      path: '/$id'
+      fullPath: '/complaints/$id'
+      preLoaderRoute: typeof AuthenticatedComplaintsIdRouteImport
+      parentRoute: typeof AuthenticatedComplaintsRoute
+    }
   }
 }
+
+interface AuthenticatedComplaintsRouteChildren {
+  AuthenticatedComplaintsIdRoute: typeof AuthenticatedComplaintsIdRoute
+  AuthenticatedComplaintsCreateRoute: typeof AuthenticatedComplaintsCreateRoute
+  AuthenticatedComplaintsIndexRoute: typeof AuthenticatedComplaintsIndexRoute
+}
+
+const AuthenticatedComplaintsRouteChildren: AuthenticatedComplaintsRouteChildren =
+  {
+    AuthenticatedComplaintsIdRoute: AuthenticatedComplaintsIdRoute,
+    AuthenticatedComplaintsCreateRoute: AuthenticatedComplaintsCreateRoute,
+    AuthenticatedComplaintsIndexRoute: AuthenticatedComplaintsIndexRoute,
+  }
+
+const AuthenticatedComplaintsRouteWithChildren =
+  AuthenticatedComplaintsRoute._addFileChildren(
+    AuthenticatedComplaintsRouteChildren,
+  )
+
+interface AuthenticatedLegalRouteChildren {
+  AuthenticatedLegalIdRoute: typeof AuthenticatedLegalIdRoute
+}
+
+const AuthenticatedLegalRouteChildren: AuthenticatedLegalRouteChildren = {
+  AuthenticatedLegalIdRoute: AuthenticatedLegalIdRoute,
+}
+
+const AuthenticatedLegalRouteWithChildren =
+  AuthenticatedLegalRoute._addFileChildren(AuthenticatedLegalRouteChildren)
 
 interface AuthenticatedRightsRouteChildren {
   AuthenticatedRightsCategoryRoute: typeof AuthenticatedRightsCategoryRoute
@@ -257,28 +576,46 @@ const AuthenticatedRightsRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAiRoute: typeof AuthenticatedAiRoute
+  AuthenticatedAssistantRoute: typeof AuthenticatedAssistantRoute
+  AuthenticatedComplaintsRoute: typeof AuthenticatedComplaintsRouteWithChildren
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedEmergencyRoute: typeof AuthenticatedEmergencyRoute
+  AuthenticatedEvidenceRoute: typeof AuthenticatedEvidenceRoute
+  AuthenticatedLegalRoute: typeof AuthenticatedLegalRouteWithChildren
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedResourcesRoute: typeof AuthenticatedResourcesRoute
   AuthenticatedRightsRoute: typeof AuthenticatedRightsRouteWithChildren
-  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedSearchRoute: typeof AuthenticatedSearchRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAiRoute: AuthenticatedAiRoute,
+  AuthenticatedAssistantRoute: AuthenticatedAssistantRoute,
+  AuthenticatedComplaintsRoute: AuthenticatedComplaintsRouteWithChildren,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedEmergencyRoute: AuthenticatedEmergencyRoute,
+  AuthenticatedEvidenceRoute: AuthenticatedEvidenceRoute,
+  AuthenticatedLegalRoute: AuthenticatedLegalRouteWithChildren,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedResourcesRoute: AuthenticatedResourcesRoute,
   AuthenticatedRightsRoute: AuthenticatedRightsRouteWithChildren,
-  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedSearchRoute: AuthenticatedSearchRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
+  LoginRoute: LoginRoute,
+  RegisterRoute: RegisterRoute,
   Reset_passwordRoute: Reset_passwordRoute,
   ApiSplatRoute: ApiSplatRoute,
 }

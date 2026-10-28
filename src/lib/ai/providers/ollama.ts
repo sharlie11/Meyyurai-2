@@ -8,6 +8,7 @@ import {
   InternalCaseSummary,
   InvestigationResult,
   RetrievalDocument,
+  validateAndFilterCitations,
 } from "../provider";
 
 type QueryCategory = "workplace" | "contract" | "cyber" | "women" | "consumer" | "tenant" | "accident" | "general";
@@ -160,6 +161,7 @@ export class OllamaProvider implements AIProvider {
   private baseUrl: string;
   private model: string;
   private embeddingModel: string;
+  public lastCallFailed: boolean = false;
 
   constructor() {
     this.baseUrl = (process.env.OLLAMA_BASE_URL || "http://localhost:11434").replace(/\/+$/, "");
@@ -210,26 +212,33 @@ export class OllamaProvider implements AIProvider {
     schemaDescription: string,
   ): Promise<T | null> {
     const makeRequest = async (sysMsg: string) => {
-      const response = await fetch(`${this.baseUrl}/api/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: this.model,
-          messages: [
-            { role: "system", content: sysMsg },
-            { role: "user", content: userPrompt },
-          ],
-          format: "json",
-          stream: false,
-        }),
-      });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 2500);
+      try {
+        const response = await fetch(`${this.baseUrl}/api/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            model: this.model,
+            messages: [
+              { role: "system", content: sysMsg },
+              { role: "user", content: userPrompt },
+            ],
+            format: "json",
+            stream: false,
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error(`Ollama HTTP Error ${response.status}: ${response.statusText}`);
+        if (!response.ok) {
+          throw new Error(`Ollama HTTP Error ${response.status}: ${response.statusText}`);
+        }
+
+        const data = (await response.json()) as { message?: { content?: string } };
+        return data.message?.content || "";
+      } finally {
+        clearTimeout(timer);
       }
-
-      const data = (await response.json()) as { message?: { content?: string } };
-      return data.message?.content || "";
     };
 
     // Attempt 1
@@ -309,6 +318,7 @@ Output MUST be valid JSON matching this schema:
     }
 
     // Rule-engine template fallback
+    this.lastCallFailed = true;
     return {
       needs_clarification: false,
       internal_case_summary: {
@@ -347,8 +357,12 @@ Output MUST be valid JSON matching this schema:
     const category = categorizeUserQuery(userQuery);
 
     const systemInstruction = `You are Meyyurai's Legal Assistant.
-Generate a comprehensive 3-part response based on the user's query, case summary, retrieved legal documents, and government services.
-Even if retrieved legal chunks are sparse, use your extensive knowledge of Indian laws (e.g. Motor Vehicles Act 1988, Bharatiya Nyaya Sanhita BNS 2023, IPC, Consumer Protection Act, POSH Act, Labour Codes) to provide exact relevant statutory acts, sections, official sources, helplines, authority filing portals, and action plans tailored directly to the user's scenario.
+STRICT CITATION MANDATE:
+1. You are ONLY allowed to cite acts and section numbers that explicitly appear in the provided Retrieved Docs. You MUST NOT invent, infer, or cite any act name or section number not present in Retrieved Docs.
+2. IF RETRIEVED DOCS IS EMPTY OR HAS 0 CHUNKS:
+   - You MUST set "relevant_laws" to an empty array [].
+   - You MUST state explicitly in "situation_summary": "I couldn't find a specific matching statute — here's general guidance, please verify with NALSA (15100) or a lawyer".
+   - You MUST provide general guidance and include National Legal Services Authority (NALSA Helpline: 15100) in government_helplines.
 
 Output MUST be valid JSON matching this schema:
 {
@@ -404,14 +418,22 @@ Output MUST be valid JSON matching this schema:
       action_plan: ActionPlanGeneratorResponse;
     }>(systemInstruction, userPrompt, schemaDesc);
 
+    let rawResponse: {
+      explanation: ExplanationGeneratorResponse;
+      guidance: GuidanceEngineResponse;
+      action_plan: ActionPlanGeneratorResponse;
+    };
+
     if (result && result.explanation && result.guidance && result.action_plan) {
-      return result;
+      rawResponse = result;
+    } else {
+      const explanation = this.getFallbackExplanation(category, userQuery);
+      const guidance = this.getFallbackGuidance(category);
+      const action_plan = this.getFallbackActionPlan(category);
+      rawResponse = { explanation, guidance, action_plan };
     }
 
-    const explanation = this.getFallbackExplanation(category, userQuery);
-    const guidance = this.getFallbackGuidance(category);
-    const action_plan = this.getFallbackActionPlan(category);
-    return { explanation, guidance, action_plan };
+    return validateAndFilterCitations(rawResponse, retrievedDocuments);
   }
 
   async explain(

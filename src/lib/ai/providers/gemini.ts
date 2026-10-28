@@ -8,6 +8,7 @@ import {
   InternalCaseSummary,
   InvestigationResult,
   RetrievalDocument,
+  validateAndFilterCitations,
 } from "../provider";
 
 type QueryCategory = "workplace" | "contract" | "cyber" | "women" | "consumer" | "tenant" | "accident" | "property" | "general";
@@ -159,11 +160,17 @@ export class GeminiProvider implements AIProvider {
   private apiKey: string;
   private model: string;
   private embeddingModel: string;
+  public lastCallFailed: boolean = false;
+  public lastFailureReason: string | null = null;
 
   constructor() {
-    this.apiKey = process.env.GEMINI_API_KEY || "";
-    this.model = "gemini-1.5-flash";
+    this.apiKey = (process.env.GEMINI_API_KEY || "").trim();
+    this.model = process.env.GEMINI_MODEL_NAME || "gemini-3.1-flash-lite";
     this.embeddingModel = "text-embedding-004";
+    if (!this.apiKey) {
+      this.lastCallFailed = true;
+      this.lastFailureReason = "No GEMINI_API_KEY detected in environment. Using verified statutory legal knowledge engine.";
+    }
   }
 
   async generateEmbedding(text: string): Promise<number[]> {
@@ -275,7 +282,15 @@ Output MUST be valid JSON matching this schema:
       );
 
       if (!response.ok) {
-        console.warn(`Gemini API Warning (${response.status} ${response.statusText}): Falling back to rule engine.`);
+        this.lastCallFailed = true;
+        if (response.status === 429) {
+          this.lastFailureReason = "Google AI Studio free API quota limit reached (HTTP 429). Free tier rate limits are strictly constrained. Switched to verified statutory legal engine.";
+        } else if (response.status === 400 || response.status === 403) {
+          this.lastFailureReason = `Gemini API Authentication error (HTTP ${response.status}). Switched to verified statutory legal engine.`;
+        } else {
+          this.lastFailureReason = `Gemini service temporarily unavailable (HTTP ${response.status}). Switched to verified statutory legal engine.`;
+        }
+        console.warn(`Gemini API Notice: ${this.lastFailureReason}`);
         return {
           needs_clarification: false,
           internal_case_summary: {
@@ -309,6 +324,7 @@ Output MUST be valid JSON matching this schema:
       }
       return parsed;
     } catch (err) {
+      this.lastCallFailed = true;
       console.warn("Gemini fetch exception, using rule engine fallback:", err);
       return {
         needs_clarification: false,
@@ -546,9 +562,134 @@ Output MUST be valid JSON matching this schema:
         },
       ],
       what_this_means:
-        "Every citizen in India has a fundamental right to fair treatment, dignity, and access to free legal assistance via statutory legal aid bodies. Coercion or unauthorized financial withholding is legally challengeable.",
+        "Every citizen in India has a fundamental right to fair treatment, dignity, and access to free legal assistance via statutory legal aid bodies.",
       confidence_level: "High",
     };
+  }
+
+  async generateCombinedRAGResponse(
+    userQuery: string,
+    caseSummary: InternalCaseSummary | undefined,
+    retrievedDocuments: RetrievalDocument[],
+    retrievedServices: GovernmentService[],
+  ): Promise<{
+    explanation: ExplanationGeneratorResponse;
+    guidance: GuidanceEngineResponse;
+    action_plan: ActionPlanGeneratorResponse;
+  }> {
+    const category = categorizeUserQuery(userQuery);
+
+    if (!this.apiKey) {
+      this.lastCallFailed = true;
+      const explanation = this.getFallbackExplanation(category, userQuery);
+      const guidance = this.getFallbackGuidance(category);
+      const action_plan = this.getFallbackActionPlan(category);
+      return validateAndFilterCitations({ explanation, guidance, action_plan }, retrievedDocuments);
+    }
+
+    const systemInstruction = `You are Meyyurai's Legal Assistant.
+STRICT CITATION MANDATE:
+1. You are ONLY allowed to cite statutory acts and section numbers that explicitly appear in the provided Retrieved Docs. You MUST NOT invent, infer, or cite any act name or section number not present in Retrieved Docs.
+2. IF RETRIEVED DOCS IS EMPTY OR HAS 0 CHUNKS:
+   - You MUST set "relevant_laws" to an empty array [].
+   - You MUST state explicitly in "situation_summary": "I couldn't find a specific matching statute — here's general guidance, please verify with NALSA (15100) or a lawyer".
+   - You MUST provide general guidance and include National Legal Services Authority (NALSA Helpline: 15100) in government_helplines.
+
+Output MUST be valid JSON matching this schema:
+{
+  "explanation": {
+    "situation_summary": "string",
+    "relevant_laws": [
+      {
+        "act_name": "string",
+        "section": "string",
+        "official_source": "string",
+        "official_url": "string"
+      }
+    ],
+    "what_this_means": "string",
+    "confidence_level": "High" | "Medium" | "Low"
+  },
+  "guidance": {
+    "why_these_laws_apply": "string",
+    "immediate_actions": ["string"],
+    "where_to_file": {
+      "authority": "string",
+      "portal_url": "string",
+      "contact_details": "string",
+      "why_this_authority": "string"
+    },
+    "government_helplines": [
+      {
+        "name": "string",
+        "number": "string",
+        "description": "string"
+      }
+    ],
+    "documents_to_prepare": ["string"],
+    "expected_process": ["string"],
+    "time_limits": "string"
+  },
+  "action_plan": {
+    "current_stage": "string",
+    "immediate_actions": ["string"],
+    "authorities_to_contact": ["string"],
+    "expected_outcomes": ["string"],
+    "additional_information_needed": ["string"],
+    "continue_guidance": ["string"]
+  }
+}`;
+
+    const prompt = `User Query: ${userQuery}\nCase Summary: ${JSON.stringify(caseSummary)}\nRetrieved Docs: ${JSON.stringify(retrievedDocuments)}\nRetrieved Services: ${JSON.stringify(retrievedServices)}`;
+
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: systemInstruction }] },
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json", temperature: 0.1 },
+          }),
+        },
+      );
+
+      let rawResponse: {
+        explanation: ExplanationGeneratorResponse;
+        guidance: GuidanceEngineResponse;
+        action_plan: ActionPlanGeneratorResponse;
+      };
+
+      if (!response.ok) {
+        this.lastCallFailed = true;
+        if (response.status === 429) {
+          this.lastFailureReason = "Google AI Studio free API quota limit reached (HTTP 429: Resource Exhausted). Free-tier API rate limits are restricted. Serving statutory bare acts and guidance from verified repository.";
+        } else if (response.status === 400 || response.status === 403) {
+          this.lastFailureReason = `Gemini API key is invalid or unauthorized (HTTP ${response.status}). Serving statutory bare acts and guidance from verified repository.`;
+        } else {
+          this.lastFailureReason = `Gemini service error (HTTP ${response.status}). Serving statutory bare acts and guidance from verified repository.`;
+        }
+        console.warn(`Gemini combined RAG notice: ${this.lastFailureReason}`);
+        const explanation = this.getFallbackExplanation(category, userQuery);
+        const guidance = this.getFallbackGuidance(category);
+        const action_plan = this.getFallbackActionPlan(category);
+        rawResponse = { explanation, guidance, action_plan };
+      } else {
+        const data = (await response.json()) as { candidates: { content: { parts: { text: string }[] } }[] };
+        rawResponse = JSON.parse(data.candidates[0].content.parts[0].text);
+      }
+
+      return validateAndFilterCitations(rawResponse, retrievedDocuments);
+    } catch (err) {
+      this.lastCallFailed = true;
+      console.warn("Gemini combined RAG exception, using fallback:", err);
+      const explanation = this.getFallbackExplanation(category, userQuery);
+      const guidance = this.getFallbackGuidance(category);
+      const action_plan = this.getFallbackActionPlan(category);
+      return validateAndFilterCitations({ explanation, guidance, action_plan }, retrievedDocuments);
+    }
   }
 
   async explain(

@@ -32,11 +32,13 @@ import {
   FileQuestion,
   Gavel,
   Mail,
+  Info,
 } from "lucide-react";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import type { GeneratedAiResponse, RetrievalDocument } from "@/lib/ai/provider";
+import { getLawOfficialUrl, getLawSectionUrl } from "@/lib/data/rights-data";
 
 export const Route = createFileRoute("/_authenticated/ai")({
   head: () => ({
@@ -59,7 +61,7 @@ type Message = {
   isError?: boolean;
 };
 
-function AiScreen() {
+export function AiScreen() {
   const { t } = useI18n();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -119,12 +121,14 @@ function AiScreen() {
       } = await supabase.auth.getSession();
       const token = session?.access_token;
 
+      const reqHeaders: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) {
+        reqHeaders["Authorization"] = `Bearer ${token}`;
+      }
+
       const res = await fetch("/api/ai/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token || "active_demo_token"}`,
-        },
+        headers: reqHeaders,
         body: JSON.stringify({
           question: userMessage.content,
           language: "en",
@@ -360,14 +364,26 @@ function AiStructuredResponse({
       {/* 0. Source Mode Badge */}
       <div className="w-full flex items-center justify-between px-1">
         {data.is_fallback ? (
-          <div className="flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 shadow-sm">
-            <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
-            <span>⚠️ Fallback Mode — limited guidance, AI service / retrieval unavailable</span>
+          <div className="flex flex-col gap-1 w-full">
+            <div className="flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 shadow-sm w-fit">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
+              <span>Offline Statutory Mode — {data.provider_name || "Statutory Knowledge Base"}</span>
+            </div>
+            {data.fallback_reason && (
+              <p className="text-[11px] text-muted-foreground px-1">
+                ℹ️ {data.fallback_reason}
+              </p>
+            )}
           </div>
-        ) : (
+        ) : (data.retrieval_count || 0) > 0 ? (
           <div className="flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 shadow-sm">
             <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-            <span>✓ Verified — Gemini + RAG ({data.retrieval_count || 0} Legal Sources)</span>
+            <span>✓ Verified — {data.provider_name || "Gemini"} + RAG ({data.retrieval_count} Legal {data.retrieval_count === 1 ? "Source" : "Sources"})</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 shadow-sm">
+            <Info className="h-4 w-4 shrink-0 text-blue-500" />
+            <span>General guidance — no specific statute matched ({data.provider_name || "Gemini"})</span>
           </div>
         )}
       </div>

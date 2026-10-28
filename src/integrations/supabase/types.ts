@@ -916,25 +916,151 @@ export type Database = {
         Row: {
           id: string;
           user_id: string;
-          target_type: string;
-          target_id: string;
-          metadata: Json | null;
+          law_id: string | null;
+          section_id: string | null;
+          title: string;
+          category: string;
+          source_url: string | null;
           created_at: string;
         };
         Insert: {
           id?: string;
           user_id: string;
-          target_type: string;
-          target_id: string;
-          metadata?: Json | null;
+          law_id?: string | null;
+          section_id?: string | null;
+          title: string;
+          category?: string;
+          source_url?: string | null;
           created_at?: string;
         };
         Update: {
           id?: string;
           user_id?: string;
-          target_type?: string;
-          target_id?: string;
-          metadata?: Json | null;
+          law_id?: string | null;
+          section_id?: string | null;
+          title?: string;
+          category?: string;
+          source_url?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      complaints: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          category: string;
+          complainant_name: string | null;
+          incident_date: string | null;
+          location: string | null;
+          respondent: string | null;
+          incident_description: string;
+          requested_action: string | null;
+          contact_details: string | null;
+          complaint_text: string;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          category?: string;
+          complainant_name?: string | null;
+          incident_date?: string | null;
+          location?: string | null;
+          respondent?: string | null;
+          incident_description: string;
+          requested_action?: string | null;
+          contact_details?: string | null;
+          complaint_text: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          category?: string;
+          complainant_name?: string | null;
+          incident_date?: string | null;
+          location?: string | null;
+          respondent?: string | null;
+          incident_description?: string;
+          requested_action?: string | null;
+          contact_details?: string | null;
+          complaint_text?: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      evidence: {
+        Row: {
+          id: string;
+          user_id: string;
+          complaint_id: string | null;
+          file_name: string;
+          file_type: string;
+          file_url: string;
+          file_size: number;
+          description: string | null;
+          extracted_text: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          complaint_id?: string | null;
+          file_name: string;
+          file_type: string;
+          file_url: string;
+          file_size?: number;
+          description?: string | null;
+          extracted_text?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          complaint_id?: string | null;
+          file_name?: string;
+          file_type?: string;
+          file_url?: string;
+          file_size?: number;
+          description?: string | null;
+          extracted_text?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      ai_logs: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          conversation_id: string | null;
+          query: string;
+          provider: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          conversation_id?: string | null;
+          query: string;
+          provider?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          conversation_id?: string | null;
+          query?: string;
+          provider?: string;
           created_at?: string;
         };
         Relationships: [];

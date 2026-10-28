@@ -91,6 +91,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
     ],
     links: [
+      { rel: "icon", href: "/favicon.ico" },
+      { rel: "apple-touch-icon", href: "/icon-192.png" },
       { rel: "manifest", href: "/manifest.json" },
       { rel: "stylesheet", href: appCss },
       {
@@ -145,11 +147,11 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
-        <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-background">
-          <main className="flex-1 pb-24">
+        <div className="mx-auto flex min-h-dvh max-w-md md:max-w-7xl flex-col bg-background">
+          <BottomNav />
+          <main className="flex-1 pb-24 md:pb-12 md:py-6 md:px-6">
             <Outlet />
           </main>
-          <BottomNav />
           <Toaster position="top-center" />
         </div>
       </I18nProvider>
