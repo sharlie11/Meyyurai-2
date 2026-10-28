@@ -5,6 +5,8 @@ export interface ChatMessage {
   timestamp: string;
   lawsReferenced?: string[];
   steps?: string[];
+  providerName?: string;
+  isFallback?: boolean;
 }
 
 export const QUICK_LEGAL_PROMPTS = [
@@ -287,6 +289,8 @@ export async function fetchBackendAIQuery(userQuery: string, userLang: string = 
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           lawsReferenced: laws.length > 0 ? laws : undefined,
           steps: steps.length > 0 ? steps : undefined,
+          providerName: ans.provider_name || 'Gemini 3.1 Flash',
+          isFallback: Boolean(ans.is_fallback),
         };
       }
     }
@@ -294,7 +298,10 @@ export async function fetchBackendAIQuery(userQuery: string, userLang: string = 
     // Network or backend unavailable -> use local zero-API statutory engine fallback
   }
 
-  return sendLegalAIQuery(userQuery, userLang);
+  const localRes = await sendLegalAIQuery(userQuery, userLang);
+  localRes.providerName = '⚡ Offline Statutory Engine';
+  localRes.isFallback = true;
+  return localRes;
 }
 
 /**

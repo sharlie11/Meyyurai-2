@@ -147,10 +147,21 @@ CREATE TABLE IF NOT EXISTS public.emergency_events (
   created_at timestamptz DEFAULT now() NOT NULL
 );
 
--- Location Tracking
+-- Tracking Sessions
+CREATE TABLE IF NOT EXISTS public.tracking_sessions (
+  session_id text PRIMARY KEY,
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  status text DEFAULT 'active' NOT NULL,
+  started_at timestamptz DEFAULT now() NOT NULL,
+  ended_at timestamptz,
+  max_duration_ms bigint DEFAULT 10800000 NOT NULL,
+  created_at timestamptz DEFAULT now() NOT NULL
+);
+
+-- Location Tracking Breadcrumbs
 CREATE TABLE IF NOT EXISTS public.location_tracking (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  session_id uuid NOT NULL,
+  session_id text NOT NULL,
   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   latitude double precision NOT NULL,
   longitude double precision NOT NULL,
@@ -365,6 +376,7 @@ CREATE POLICY "Users can manage own trusted contacts" ON public.trusted_contacts
 DROP POLICY IF EXISTS "Users can manage own emergency events" ON public.emergency_events;
 CREATE POLICY "Users can manage own emergency events" ON public.emergency_events FOR ALL USING (auth.uid() = user_id);
 DROP POLICY IF EXISTS "Users can manage own tracking" ON public.location_tracking;
+DROP POLICY IF EXISTS "Accepted trusted contacts can view tracking" ON public.location_tracking;
 CREATE POLICY "Users can manage own tracking" ON public.location_tracking FOR ALL USING (auth.uid() = user_id);
 DROP POLICY IF EXISTS "Users can manage own ai conversations" ON public.ai_conversations;
 CREATE POLICY "Users can manage own ai conversations" ON public.ai_conversations FOR ALL USING (auth.uid() = user_id);

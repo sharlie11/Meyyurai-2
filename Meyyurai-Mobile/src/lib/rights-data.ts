@@ -8,6 +8,7 @@ export interface RelevantLaw {
   trialCourt?: string;
   officialSource: string;
   officialUrl?: string;
+  sectionUrl?: string;
 }
 
 export interface AuthorityOffice {
@@ -58,7 +59,9 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         description: 'Criminalizes assault or use of criminal force against any woman with intent to outrage her modesty.',
         classification: 'Cognizable | Non-Bailable',
         punishment: 'Mandatory imprisonment of 1 to 5 years + Fine.',
-        officialSource: 'Ministry of Law & Justice, Govt of India',
+        officialSource: 'Ministry of Home Affairs (MHA) / Gazette of India',
+        officialUrl: 'https://www.mha.gov.in/sites/default/files/250883_english_01042024.pdf',
+        sectionUrl: 'https://indiankanoon.org/search/?formInput=Bharatiya%20Nyaya%20Sanhita%20Section%2074',
       },
       {
         actName: 'Protection of Women from Domestic Violence Act, 2005',
@@ -66,7 +69,9 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         description: 'Grants interim protection orders, residence rights in shared household, monetary relief, and custody orders.',
         classification: 'Cognizable | Non-Bailable',
         punishment: 'Violation of Protection Order: Imprisonment up to 1 year or Fine up to ₹20,000.',
-        officialSource: 'National Commission for Women (NCW)',
+        officialSource: 'Ministry of Women and Child Development (WCD)',
+        officialUrl: 'https://wcd.nic.in/act/protection-women-domestic-violence-act-2005',
+        sectionUrl: 'https://indiankanoon.org/search/?formInput=Protection%20of%20Women%20from%20Domestic%20Violence%20Act%20Section%203',
       },
     ],
     authorities: [
@@ -108,6 +113,8 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         classification: 'Cognizable | Bailable',
         punishment: 'Imprisonment up to 3 years + Fine up to ₹1 Lakh.',
         officialSource: 'Ministry of Electronics and IT (MeitY)',
+        officialUrl: 'https://www.meity.gov.in/writereaddata/files/itbill2000.pdf',
+        sectionUrl: 'https://indiankanoon.org/search/?formInput=Information%20Technology%20Act%20Section%2066D',
       },
     ],
     authorities: [
@@ -148,6 +155,8 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         classification: 'Statutory Labour Enforcement',
         punishment: 'Employer failure to pay wages: Fine up to ₹50,000 for 1st offense; Repeat offense: Imprisonment up to 3 months.',
         officialSource: 'Ministry of Labour & Employment',
+        officialUrl: 'https://labour.gov.in/sites/default/files/TheCodeonWages2019.pdf',
+        sectionUrl: 'https://indiankanoon.org/search/?formInput=Code%20on%20Wages%202019%20Section%205',
       },
     ],
     authorities: [
@@ -187,7 +196,9 @@ export const RIGHTS_DATA: Record<string, CategoryRightsDetail> = {
         description: 'Guarantees right to safety, information, redressal, and replacement of defective goods or deficient services.',
         classification: 'Statutory Consumer Rights',
         punishment: 'Failure to comply with Consumer Order: Imprisonment from 1 month to 3 years + Fine ₹25,000 to ₹1 Lakh.',
-        officialSource: 'Department of Consumer Affairs',
+        officialSource: 'Department of Consumer Affairs, Govt of India',
+        officialUrl: 'https://consumeraffairs.nic.in/sites/default/files/act_file/Consumer%20Protection%20Act%202019.pdf',
+        sectionUrl: 'https://indiankanoon.org/search/?formInput=Consumer%20Protection%20Act%202019%20Section%2035',
       },
     ],
     authorities: [

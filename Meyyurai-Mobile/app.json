@@ -13,7 +13,13 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.meyyurai.app"
+      "bundleIdentifier": "com.meyyurai.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Meyyurai uses your location to attach exact GPS coordinates to emergency SOS alerts.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Meyyurai requires background location to share live transit updates with your trusted contacts when your phone is locked.",
+        "NSLocationAlwaysUsageDescription": "Meyyurai requires background location for live emergency transit tracking.",
+        "UIBackgroundModes": ["location"]
+      }
     },
     "android": {
       "softwareKeyboardLayoutMode": "adjustResize",
@@ -25,7 +31,12 @@
       "permissions": [
         "CALL_PHONE",
         "VIBRATE",
-        "INTERNET"
+        "INTERNET",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
       ]
     },
     "web": {

@@ -104,6 +104,16 @@ export const AIScreen = () => {
                 <Text style={styles.timestamp}>{msg.timestamp}</Text>
               </View>
 
+              {msg.sender === 'ai' && (
+                <View style={styles.badgeRow}>
+                  <Text style={[styles.badgeText, msg.isFallback && styles.fallbackBadgeText]}>
+                    {msg.isFallback || !msg.providerName || msg.providerName.includes("Offline")
+                      ? '⚡ Offline Statutory Engine — Rule-based guidance'
+                      : `✓ ${msg.providerName}`}
+                  </Text>
+                </View>
+              )}
+
               <Text style={styles.messageText}>{msg.text}</Text>
 
               {/* LAWS REFERENCED */}
@@ -256,6 +266,24 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: Colors.textMuted,
     marginLeft: 'auto',
+  },
+  badgeRow: {
+    marginBottom: 8,
+    alignSelf: 'flex-start',
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#0D9488',
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  fallbackBadgeText: {
+    color: '#D97706',
+    backgroundColor: '#FEF3C7',
   },
   messageText: {
     fontSize: 14,

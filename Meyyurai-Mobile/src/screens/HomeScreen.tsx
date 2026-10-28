@@ -28,6 +28,13 @@ import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import { useI18n } from '../lib/i18n';
 import { supabase } from '../lib/supabase';
+import {
+  startLiveTransitSharing,
+  stopLiveTransitSharing,
+  checkSessionExpiration,
+  STORAGE_KEYS,
+} from '../lib/backgroundTracking';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface DispatchAlert {
   contact_name: string;
@@ -43,6 +50,61 @@ export const HomeScreen = ({ navigation }: any) => {
   const [sosStatusMessage, setSosStatusMessage] = useState<string | null>(null);
   const [sosError, setSosError] = useState<string | null>(null);
   const [locationSummary, setLocationSummary] = useState<string | null>(null);
+
+  // Live Transit Sharing State
+  const [trackingStatus, setTrackingStatus] = useState<'INACTIVE' | 'BACKGROUND' | 'FOREGROUND_ONLY'>('INACTIVE');
+  const [trackingLoading, setTrackingLoading] = useState(false);
+
+  // Check active session status on screen mount
+  React.useEffect(() => {
+    async function initTrackingState() {
+      const isExpired = await checkSessionExpiration();
+      if (!isExpired) {
+        const sessionId = await AsyncStorage.getItem(STORAGE_KEYS.SESSION_ID);
+        if (sessionId) {
+          const bgPerm = await Location.getBackgroundPermissionsAsync();
+          setTrackingStatus(bgPerm.status === 'granted' ? 'BACKGROUND' : 'FOREGROUND_ONLY');
+        }
+      }
+    }
+    initTrackingState();
+  }, []);
+
+  const handleToggleTracking = async () => {
+    setTrackingLoading(true);
+    try {
+      if (trackingStatus !== 'INACTIVE') {
+        const res = await stopLiveTransitSharing('USER_STOPPED');
+        setTrackingStatus('INACTIVE');
+        if (res.flushed) {
+          Alert.alert('Transit Sharing Stopped', 'Live location sharing with trusted contacts has ended.');
+        } else {
+          Alert.alert(
+            'Transit Sharing Stopped',
+            `Live sharing ended. ${res.pendingCount} unsent location points saved locally for auto-sync when online.`
+          );
+        }
+      } else {
+        const res = await startLiveTransitSharing();
+        if (res.status === 'BACKGROUND') {
+          setTrackingStatus('BACKGROUND');
+          Alert.alert('🟢 Live Transit Sharing Active', 'Sharing background GPS updates with trusted contacts while in transit.');
+        } else if (res.status === 'FOREGROUND_ONLY') {
+          setTrackingStatus('FOREGROUND_ONLY');
+          Alert.alert(
+            '📱 Foreground Sharing Active',
+            'Background location permission was denied. Live tracking will run while app is visible on screen.'
+          );
+        } else {
+          Alert.alert('Permission Required', res.error || 'Location permission denied.');
+        }
+      }
+    } catch (err) {
+      console.error('Toggle tracking error:', err);
+    } finally {
+      setTrackingLoading(false);
+    }
+  };
 
   const handleSOS = async () => {
     try {
@@ -173,13 +235,68 @@ export const HomeScreen = ({ navigation }: any) => {
       <Header />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* TOP BANNER */}
-        <View style={styles.topHeaderBox}>
-          <Text style={styles.tagline}>YOU'RE SAFE HERE</Text>
-          <Text style={styles.mainTitle}>Emergency</Text>
-          <Text style={styles.subtext}>
-            One tap away from help. Real-time emergency location & contact dispatch.
+        {/* LIVE TRANSIT SHARING PERSISTENT STATUS BANNER */}
+        {trackingStatus !== 'INACTIVE' && (
+          <View
+            style={[
+              styles.trackingBanner,
+              trackingStatus === 'BACKGROUND' ? styles.trackingBannerGreen : styles.trackingBannerYellow,
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <MapPin
+                size={16}
+                color={trackingStatus === 'BACKGROUND' ? '#047857' : '#B45309'}
+                style={{ marginRight: 8 }}
+              />
+              <Text
+                style={[
+                  styles.trackingBannerText,
+                  trackingStatus === 'BACKGROUND' ? { color: '#065F46' } : { color: '#92400E' },
+                ]}
+              >
+                {trackingStatus === 'BACKGROUND'
+                  ? '🟢 Live Transit Sharing Active (Background)'
+                  : '📱 Foreground Transit Sharing Active — Keep screen on'}
+              </Text>
+            </View>
+
+            {trackingStatus === 'FOREGROUND_ONLY' && (
+              <TouchableOpacity
+                style={styles.settingsButton}
+                onPress={() => Linking.openSettings()}
+              >
+                <Text style={styles.settingsButtonText}>Enable in Settings</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {/* LIVE TRANSIT SHARING CONTROL CARD */}
+        <View style={styles.transitControlCard}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+            <Shield size={18} color={Colors.primary} style={{ marginRight: 8 }} />
+            <Text style={styles.transitTitle}>Live Transit Sharing</Text>
+          </View>
+          <Text style={styles.transitSubtitle}>
+            Share continuous GPS breadcrumbs with trusted contacts during night travel or transit. Auto-expires in 3 hours.
           </Text>
+          <TouchableOpacity
+            style={[
+              styles.transitActionButton,
+              trackingStatus !== 'INACTIVE' && styles.transitActionButtonActive,
+            ]}
+            onPress={handleToggleTracking}
+            disabled={trackingLoading}
+          >
+            {trackingLoading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.transitActionButtonText}>
+                {trackingStatus !== 'INACTIVE' ? 'Stop Live Transit Sharing' : 'Start Live Transit Sharing'}
+              </Text>
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* SOS MAIN CARD */}
@@ -355,6 +472,80 @@ const styles = StyleSheet.create({
   },
   topHeaderBox: {
     marginBottom: 16,
+  },
+  trackingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 14,
+    borderWidth: 1,
+  },
+  trackingBannerGreen: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+  },
+  trackingBannerYellow: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#FDE68A',
+  },
+  trackingBannerText: {
+    fontSize: 12,
+    fontWeight: '700',
+    flex: 1,
+  },
+  settingsButton: {
+    backgroundColor: '#D97706',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginLeft: 6,
+  },
+  settingsButtonText: {
+    fontSize: 11,
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  transitControlCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  transitTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: Colors.textPrimary,
+  },
+  transitSubtitle: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    lineHeight: 17,
+    marginBottom: 12,
+  },
+  transitActionButton: {
+    backgroundColor: Colors.primary,
+    paddingVertical: 12,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  transitActionButtonActive: {
+    backgroundColor: '#DC2626',
+  },
+  transitActionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
   tagline: {
     fontSize: 11,
